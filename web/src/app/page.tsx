@@ -14,7 +14,7 @@ export default function HomePage() {
         </div>
       </div>
 
-      <div className="shrink-0 border-t border-zinc-200/80 bg-[#f6f7f9]/95 px-3 pt-2 pb-[max(0.75rem,env(safe-area-inset-bottom))] backdrop-blur md:px-6">
+      <div className="shrink-0 border-t border-slate-200/80 bg-slate-50/95 px-3 pt-2 pb-[max(0.75rem,env(safe-area-inset-bottom))] backdrop-blur md:px-6">
         <div className="mx-auto w-full max-w-6xl">
           <ChatComposer />
         </div>

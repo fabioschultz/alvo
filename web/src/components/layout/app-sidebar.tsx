@@ -126,14 +126,14 @@ export function AppSidebar({
 
       <div className="px-3 pb-2">
         <div className="relative">
-          <Search className="pointer-events-none absolute top-1/2 left-2.5 size-3.5 -translate-y-1/2 text-zinc-400" />
+          <Search className="pointer-events-none absolute top-1/2 left-2.5 size-3.5 -translate-y-1/2 text-slate-400" />
           <Input
             value={query}
             onChange={(event) => setQuery(event.target.value)}
             type="search"
             placeholder="Buscar no menu..."
             aria-label="Buscar no menu"
-            className="h-9 rounded-lg border-zinc-200 bg-zinc-50/80 pl-8 text-sm shadow-none"
+            className="h-9 rounded-lg border-slate-200 bg-slate-50/80 pl-8 text-sm shadow-none"
           />
         </div>
       </div>
@@ -157,8 +157,8 @@ export function AppSidebar({
                   className={cn(
                     "flex min-w-0 flex-1 items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors",
                     active
-                      ? "bg-zinc-100 text-foreground"
-                      : "text-zinc-500 hover:bg-zinc-50 hover:text-foreground"
+                      ? "bg-blue-50 text-blue-800"
+                      : "text-slate-500 hover:bg-blue-50/60 hover:text-blue-900"
                   )}
                 >
                   <Icon className="size-[18px] shrink-0" />
@@ -170,7 +170,7 @@ export function AppSidebar({
                     aria-label={`${open ? "Recolher" : "Expandir"} ${item.label}`}
                     aria-expanded={open}
                     onClick={() => toggle(item.id)}
-                    className="rounded-md p-2 text-zinc-400 hover:bg-zinc-50 hover:text-foreground"
+                    className="rounded-md p-2 text-slate-400 hover:bg-slate-50 hover:text-foreground"
                   >
                     <ChevronDown
                       className={cn(
@@ -183,13 +183,13 @@ export function AppSidebar({
               </div>
 
               {hasChildren && open ? (
-                <div className="ml-4 space-y-0.5 border-l border-zinc-200 pl-3">
+                <div className="ml-4 space-y-0.5 border-l border-slate-200 pl-3">
                   {item.children!.map((child) => (
                     <Link
                       key={child.id}
                       href={child.href}
                       onClick={onNavigate}
-                      className="block rounded-md px-2 py-1.5 text-sm text-zinc-500 transition-colors hover:bg-zinc-50 hover:text-foreground"
+                      className="block rounded-md px-2 py-1.5 text-sm text-slate-500 transition-colors hover:bg-slate-50 hover:text-foreground"
                     >
                       {child.label}
                     </Link>
@@ -201,14 +201,14 @@ export function AppSidebar({
         })}
 
         {filteredItems.length === 0 ? (
-          <p className="px-3 py-4 text-sm text-zinc-400">Nenhum item encontrado.</p>
+          <p className="px-3 py-4 text-sm text-slate-400">Nenhum item encontrado.</p>
         ) : null}
       </nav>
 
       <div className="border-t border-border/80 p-3">
         <div className="flex items-center gap-3 rounded-lg px-2 py-2">
           <Avatar>
-            <AvatarFallback className="bg-zinc-900 text-[11px] font-semibold text-white">
+            <AvatarFallback className="bg-blue-800 text-[11px] font-semibold text-white">
               {currentUser.initials}
             </AvatarFallback>
           </Avatar>
