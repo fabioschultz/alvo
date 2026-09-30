@@ -194,10 +194,21 @@ export function InsightDetailDialog({
                   {priorityLabel[insight.priority]}
                 </Badge>
               </div>
-              <DialogDescription>{insight.detail.summary}</DialogDescription>
+              <DialogDescription className="text-zinc-500">
+                {insight.description}
+              </DialogDescription>
             </div>
           </div>
         </DialogHeader>
+
+        <div className="rounded-xl border border-zinc-200 bg-zinc-50/80 px-3 py-3">
+          <p className="text-[11px] font-semibold tracking-wide text-zinc-400 uppercase">
+            Por que a AI sinalizou isso
+          </p>
+          <p className="mt-1 text-sm leading-relaxed text-zinc-700">
+            {insight.detail.summary}
+          </p>
+        </div>
 
         <div className="grid gap-3 sm:grid-cols-3">
           {insight.detail.metrics.map((metric) => (

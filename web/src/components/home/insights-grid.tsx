@@ -1,9 +1,9 @@
 "use client"
 
-import { useState } from "react"
+import { useMemo, useState } from "react"
+import { ChevronRight } from "lucide-react"
 
 import { Badge } from "@/components/ui/badge"
-import { Card, CardContent } from "@/components/ui/card"
 import {
   InsightDetailDialog,
   insightIconMap,
@@ -17,24 +17,32 @@ import { insights, type Insight } from "@/lib/mock-data"
 export function InsightsGrid() {
   const [selected, setSelected] = useState<Insight | null>(null)
 
+  const highPriorityCount = useMemo(
+    () => insights.filter((insight) => insight.priority === "alta").length,
+    []
+  )
+
   return (
-    <section aria-labelledby="insights-heading" className="space-y-3">
+    <section aria-labelledby="insights-heading">
       <div className="rounded-2xl border border-zinc-200/80 bg-white p-4 shadow-sm ring-1 ring-zinc-100 md:p-5">
-        <div className="mb-4 flex items-end justify-between gap-3">
+        <div className="mb-4 flex flex-wrap items-end justify-between gap-2">
           <div>
             <h2
               id="insights-heading"
               className="text-base font-semibold tracking-tight text-foreground"
             >
               Insights de hoje
+              <span className="ml-1.5 font-medium text-zinc-400">
+                · {insights.length}
+              </span>
             </h2>
-            <p className="text-sm text-zinc-500">
-              Clique em um card para abrir o detalhe com evidências e ações.
+            <p className="mt-0.5 text-sm text-zinc-500">
+              {highPriorityCount} alta prioridade
             </p>
           </div>
         </div>
 
-        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+        <div className="grid gap-1.5 sm:grid-cols-2">
           {insights.map((insight) => {
             const Icon = insightIconMap[insight.icon]
             return (
@@ -42,39 +50,34 @@ export function InsightsGrid() {
                 key={insight.id}
                 type="button"
                 onClick={() => setSelected(insight)}
-                className="rounded-xl text-left transition-transform hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                className={cn(
+                  "group flex items-center gap-3 rounded-xl px-3 py-2.5 text-left",
+                  "bg-zinc-50/80 ring-1 ring-zinc-200/70 transition-colors",
+                  "hover:bg-zinc-100/90 hover:ring-zinc-300",
+                  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                )}
               >
-                <Card className="h-full border-0 bg-zinc-50/80 shadow-none ring-1 ring-zinc-200/80 transition-shadow hover:shadow-md">
-                  <CardContent className="flex items-start gap-3 pt-1">
-                    <div
-                      className={cn(
-                        "flex size-10 shrink-0 items-center justify-center rounded-xl",
-                        toneClass[insight.tone]
-                      )}
-                    >
-                      <Icon className="size-5" />
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <div className="flex items-start justify-between gap-2">
-                        <h3 className="text-sm font-semibold leading-snug text-foreground">
-                          {insight.title}
-                        </h3>
-                        <Badge
-                          variant="outline"
-                          className={cn(
-                            "shrink-0 rounded-full border px-2 py-0 text-[11px] font-medium",
-                            priorityClass[insight.priority]
-                          )}
-                        >
-                          {priorityLabel[insight.priority]}
-                        </Badge>
-                      </div>
-                      <p className="mt-1 text-sm leading-snug text-zinc-500">
-                        {insight.description}
-                      </p>
-                    </div>
-                  </CardContent>
-                </Card>
+                <div
+                  className={cn(
+                    "flex size-8 shrink-0 items-center justify-center rounded-lg",
+                    toneClass[insight.tone]
+                  )}
+                >
+                  <Icon className="size-4" />
+                </div>
+                <span className="min-w-0 flex-1 truncate text-sm font-medium text-foreground">
+                  {insight.title}
+                </span>
+                <Badge
+                  variant="outline"
+                  className={cn(
+                    "shrink-0 rounded-full border px-2 py-0 text-[11px] font-medium",
+                    priorityClass[insight.priority]
+                  )}
+                >
+                  {priorityLabel[insight.priority]}
+                </Badge>
+                <ChevronRight className="size-4 shrink-0 text-zinc-300 transition-colors group-hover:text-zinc-500" />
               </button>
             )
           })}
