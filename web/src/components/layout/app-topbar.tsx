@@ -35,8 +35,8 @@ const shortcutIcon = {
 export function AppTopbar() {
   return (
     <TooltipProvider delay={200}>
-      <header className="flex h-16 shrink-0 items-center gap-4 border-b border-border/80 bg-white px-6">
-        <div className="relative max-w-md flex-1">
+      <header className="flex h-16 shrink-0 items-center gap-3 border-b border-border/80 bg-white px-4 md:gap-4 md:px-6">
+        <div className="relative min-w-0 max-w-md flex-1">
           <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-zinc-400" />
           <Input
             type="search"
@@ -46,28 +46,37 @@ export function AppTopbar() {
           />
         </div>
 
-        <div className="ml-auto flex items-center gap-1.5">
-          <div className="mr-2 hidden items-center gap-1 lg:flex">
-            <span className="mr-1 text-xs font-medium tracking-wide text-zinc-400 uppercase">
+        <div className="ml-auto flex shrink-0 items-center gap-1.5">
+          <div
+            className="flex items-center gap-0.5 rounded-xl border border-zinc-200 bg-zinc-50/60 px-1.5 py-1"
+            aria-label="Atalhos do ERP"
+          >
+            <span className="hidden px-1.5 text-[11px] font-semibold tracking-wide text-zinc-400 uppercase sm:inline">
               Atalhos
             </span>
             {shortcuts.map((item) => {
               const Icon = shortcutIcon[item.icon]
+              const isCreate = item.id === "new"
               return (
                 <Tooltip key={item.id}>
                   <TooltipTrigger
                     render={
                       <Button
-                        variant="ghost"
+                        variant={isCreate ? "default" : "ghost"}
                         size="icon"
-                        className="size-9 text-zinc-500"
+                        className={cn(
+                          "size-8",
+                          isCreate
+                            ? "rounded-lg"
+                            : "text-zinc-600 hover:text-foreground"
+                        )}
                         aria-label={item.label}
                         type="button"
-                      />
+                      >
+                        <Icon className="size-4" />
+                      </Button>
                     }
-                  >
-                    <Icon className="size-4" />
-                  </TooltipTrigger>
+                  />
                   <TooltipContent side="bottom">{item.label}</TooltipContent>
                 </Tooltip>
               )
@@ -96,7 +105,7 @@ export function AppTopbar() {
           <button
             type="button"
             className={cn(
-              "ml-1 flex items-center gap-2 rounded-full border border-zinc-200 py-1 pr-2 pl-1",
+              "ml-0.5 flex items-center gap-2 rounded-full border border-zinc-200 py-1 pr-2 pl-1",
               "hover:bg-zinc-50 transition-colors"
             )}
             aria-label={`Conta ${currentUser.workspace}`}
@@ -106,7 +115,7 @@ export function AppTopbar() {
                 {currentUser.initials}
               </AvatarFallback>
             </Avatar>
-            <span className="hidden text-sm font-medium text-foreground sm:inline">
+            <span className="hidden text-sm font-medium text-foreground md:inline">
               {currentUser.workspace}
             </span>
             <ChevronDown className="size-3.5 text-zinc-400" />

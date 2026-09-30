@@ -89,11 +89,11 @@ export function KpiCards() {
                             size="icon-xs"
                             className="size-6 text-zinc-400 hover:text-foreground"
                             aria-label={`Configurar ${kpi.label}`}
-                          />
+                          >
+                            <Settings2 className="size-3.5" />
+                          </Button>
                         }
-                      >
-                        <Settings2 className="size-3.5" />
-                      </TooltipTrigger>
+                      />
                       <TooltipContent>Configurar indicador</TooltipContent>
                     </Tooltip>
                   </div>

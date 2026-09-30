@@ -81,11 +81,11 @@ export function ChatComposer({ onSubmitPrompt }: ChatComposerProps) {
                     aria-label="Anexar arquivo"
                     disabled={status === "queued"}
                     onClick={() => fileInputRef.current?.click()}
-                  />
+                  >
+                    <Paperclip className="size-4" />
+                  </Button>
                 }
-              >
-                <Paperclip className="size-4" />
-              </TooltipTrigger>
+              />
               <TooltipContent>Anexos</TooltipContent>
             </Tooltip>
 
@@ -106,11 +106,11 @@ export function ChatComposer({ onSubmitPrompt }: ChatComposerProps) {
                           : "Transcrição de áudio (mock) — integração futura."
                       )
                     }
-                  />
+                  >
+                    <Mic className="size-4" />
+                  </Button>
                 }
-              >
-                <Mic className="size-4" />
-              </TooltipTrigger>
+              />
               <TooltipContent>Áudio</TooltipContent>
             </Tooltip>
 
