@@ -1,0 +1,7 @@
+# Settings for Cloud Run / App Hosting
+runConfig:
+  minInstances: 0
+  maxInstances: 20
+  concurrency: 80
+  cpu: 1
+  memoryMiB: 512
