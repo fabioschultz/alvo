@@ -466,7 +466,13 @@ export const shortcuts = [
 /** Cadastro de produtos — mocks tipados (sem Genkit / Firestore). */
 export type ProductStatus = "ativo" | "rascunho" | "inativo"
 
-export type ProductUnit = "kg" | "un" | "m" | "rolo" | "t"
+export type ProductUnit = "kg" | "un" | "m" | "rolo" | "t" | "pc" | "cx"
+
+export type ProductKind = "produto" | "servico"
+
+export type ProductCondition = "novo" | "usado" | "recondicionado" | "nao_especificado"
+
+export type ProductProduction = "propria" | "terceiros"
 
 export type Product = {
   id: string
@@ -474,8 +480,25 @@ export type Product = {
   sku: string
   family: string
   unit: ProductUnit
-  weightKg: number | null
+  kind: ProductKind
+  condition: ProductCondition
+  brand: string
+  production: ProductProduction
+  salePrice: number | null
+  costPrice: number | null
+  netWeightKg: number | null
+  grossWeightKg: number | null
+  widthCm: number | null
+  heightCm: number | null
+  depthCm: number | null
+  gtin: string
+  ncm: string
+  stockQty: number | null
+  stockMin: number | null
+  location: string
   description: string
+  /** @deprecated use netWeightKg — mantido p/ colunas antigas */
+  weightKg: number | null
   status: ProductStatus
   stockHint: string
   updatedAt: string
@@ -486,7 +509,22 @@ export type ProductDraft = {
   sku: string
   family: string
   unit: ProductUnit
-  weightKg: string
+  kind: ProductKind
+  condition: ProductCondition
+  brand: string
+  production: ProductProduction
+  salePrice: string
+  costPrice: string
+  netWeightKg: string
+  grossWeightKg: string
+  widthCm: string
+  heightCm: string
+  depthCm: string
+  gtin: string
+  ncm: string
+  stockQty: string
+  stockMin: string
+  location: string
   description: string
   notes: string
 }
@@ -505,7 +543,50 @@ export const productFamilies = [
   "Embalagem técnica",
 ] as const
 
-export const productUnits: ProductUnit[] = ["kg", "un", "m", "rolo", "t"]
+export const productUnits: ProductUnit[] = ["kg", "un", "pc", "cx", "m", "rolo", "t"]
+
+export const productKinds: { value: ProductKind; label: string }[] = [
+  { value: "produto", label: "Produto" },
+  { value: "servico", label: "Serviço" },
+]
+
+export const productConditions: { value: ProductCondition; label: string }[] = [
+  { value: "novo", label: "Novo" },
+  { value: "usado", label: "Usado" },
+  { value: "recondicionado", label: "Recondicionado" },
+  { value: "nao_especificado", label: "Não especificado" },
+]
+
+export const productProductions: { value: ProductProduction; label: string }[] =
+  [
+    { value: "propria", label: "Própria" },
+    { value: "terceiros", label: "Terceiros" },
+  ]
+
+export const emptyProductDraft: ProductDraft = {
+  name: "",
+  sku: "",
+  family: "Filme stretch",
+  unit: "un",
+  kind: "produto",
+  condition: "novo",
+  brand: "",
+  production: "propria",
+  salePrice: "",
+  costPrice: "",
+  netWeightKg: "",
+  grossWeightKg: "",
+  widthCm: "",
+  heightCm: "",
+  depthCm: "",
+  gtin: "",
+  ncm: "",
+  stockQty: "",
+  stockMin: "",
+  location: "",
+  description: "",
+  notes: "",
+}
 
 export const initialProducts: Product[] = [
   {
@@ -514,8 +595,24 @@ export const initialProducts: Product[] = [
     sku: "PP-500-NAT",
     family: "Filme stretch",
     unit: "rolo",
-    weightKg: 12.5,
+    kind: "produto",
+    condition: "novo",
+    brand: "Alvo",
+    production: "propria",
+    salePrice: 89.9,
+    costPrice: 52.4,
+    netWeightKg: 12.5,
+    grossWeightKg: 12.8,
+    widthCm: 50,
+    heightCm: 30,
+    depthCm: 30,
+    gtin: "7891000100101",
+    ncm: "3920.10.99",
+    stockQty: 84,
+    stockMin: 20,
+    location: "A-01-02",
     description: "Filme stretch em PP, largura 500 mm, bobina natural.",
+    weightKg: 12.5,
     status: "ativo",
     stockHint: "84 rolos",
     updatedAt: "2026-09-28",
@@ -526,8 +623,24 @@ export const initialProducts: Product[] = [
     sku: "PEAD-REC-PT",
     family: "Granulado",
     unit: "t",
-    weightKg: 1000,
+    kind: "produto",
+    condition: "novo",
+    brand: "Alvo Recicla",
+    production: "propria",
+    salePrice: 4200,
+    costPrice: 3100,
+    netWeightKg: 1000,
+    grossWeightKg: 1000,
+    widthCm: null,
+    heightCm: null,
+    depthCm: null,
+    gtin: "",
+    ncm: "3901.20.29",
+    stockQty: 6.4,
+    stockMin: 3,
+    location: "Silo 2",
     description: "Granulado PEAD reciclado, cor preta, uso industrial.",
+    weightKg: 1000,
     status: "ativo",
     stockHint: "6,4 t",
     updatedAt: "2026-09-27",
@@ -538,8 +651,24 @@ export const initialProducts: Product[] = [
     sku: "SAC-40X60-BR",
     family: "Sacos industriais",
     unit: "un",
-    weightKg: 0.042,
+    kind: "produto",
+    condition: "novo",
+    brand: "Alvo",
+    production: "propria",
+    salePrice: 0.48,
+    costPrice: 0.22,
+    netWeightKg: 0.042,
+    grossWeightKg: 0.045,
+    widthCm: 40,
+    heightCm: 60,
+    depthCm: 0.1,
+    gtin: "7891000100200",
+    ncm: "3923.21.90",
+    stockQty: 12400,
+    stockMin: 2000,
+    location: "B-03-11",
     description: "Saco tubular 40×60 cm, acabamento brilhante.",
+    weightKg: 0.042,
     status: "ativo",
     stockHint: "12.400 un",
     updatedAt: "2026-09-26",
@@ -550,8 +679,24 @@ export const initialProducts: Product[] = [
     sku: "TEC-3L-120",
     family: "Embalagem técnica",
     unit: "kg",
-    weightKg: null,
+    kind: "produto",
+    condition: "novo",
+    brand: "",
+    production: "terceiros",
+    salePrice: null,
+    costPrice: null,
+    netWeightKg: null,
+    grossWeightKg: null,
+    widthCm: null,
+    heightCm: null,
+    depthCm: null,
+    gtin: "",
+    ncm: "",
+    stockQty: null,
+    stockMin: null,
+    location: "",
     description: "Filme barreira 3 camadas, espessura 120 µm (rascunho).",
+    weightKg: null,
     status: "rascunho",
     stockHint: "—",
     updatedAt: "2026-09-25",
@@ -568,6 +713,9 @@ export function extractProductDraft(
 ): ProductDraft {
   const text = prompt.toLowerCase()
   const fromAttachment = Boolean(attachmentName)
+  const baseNotes = fromAttachment
+    ? `Campos inferidos a partir de ${attachmentName}.`
+    : "Campos sugeridos pelo Alvo AI (mock)."
 
   if (
     text.includes("pp-500") ||
@@ -575,40 +723,72 @@ export function extractProductDraft(
     (text.includes("stretch") && text.includes("500"))
   ) {
     return {
+      ...emptyProductDraft,
       name: "Filme stretch PP 500 mm natural",
       sku: "PP-500-NAT",
       family: "Filme stretch",
       unit: "rolo",
-      weightKg: "12.5",
+      brand: "Alvo",
+      salePrice: "89.90",
+      costPrice: "52.40",
+      netWeightKg: "12.5",
+      grossWeightKg: "12.8",
+      widthCm: "50",
+      heightCm: "30",
+      depthCm: "30",
+      gtin: "7891000100101",
+      ncm: "3920.10.99",
+      stockQty: "84",
+      stockMin: "20",
+      location: "A-01-02",
       description:
         "Filme stretch em PP, largura 500 mm, bobina natural — extraído do pedido.",
       notes: fromAttachment
-        ? `Campos inferidos a partir de ${attachmentName}.`
+        ? baseNotes
         : "SKU coincide com produto já cadastrado (mock de duplicata).",
     }
   }
 
   if (text.includes("pead") || text.includes("granulado")) {
     return {
+      ...emptyProductDraft,
       name: "Granulado PEAD natural extrusão",
       sku: "PEAD-NAT-EX",
       family: "Granulado",
       unit: "t",
-      weightKg: "1000",
+      brand: "Alvo Recicla",
+      salePrice: "4200",
+      costPrice: "3100",
+      netWeightKg: "1000",
+      grossWeightKg: "1000",
+      ncm: "3901.20.29",
+      stockQty: "2",
+      stockMin: "1",
+      location: "Silo 1",
       description: "Granulado PEAD natural para extrusão, uso industrial.",
-      notes: fromAttachment
-        ? `Referência anexada: ${attachmentName}.`
-        : "Família e unidade sugeridas pelo Alvo AI (mock).",
+      notes: baseNotes,
     }
   }
 
   if (text.includes("saco") || text.includes("tubular")) {
     return {
+      ...emptyProductDraft,
       name: "Saco tubular 50×70 fosco",
       sku: "SAC-50X70-FO",
       family: "Sacos industriais",
       unit: "un",
-      weightKg: "0.055",
+      brand: "Alvo",
+      salePrice: "0.55",
+      costPrice: "0.25",
+      netWeightKg: "0.055",
+      grossWeightKg: "0.058",
+      widthCm: "50",
+      heightCm: "70",
+      depthCm: "0.1",
+      ncm: "3923.21.90",
+      stockQty: "5000",
+      stockMin: "1000",
+      location: "B-02-08",
       description: "Saco tubular 50×70 cm, acabamento fosco.",
       notes: "Dimensões e acabamento inferidos do texto (mock).",
     }
@@ -618,16 +798,28 @@ export function extractProductDraft(
     prompt.trim().length > 48 ? `${prompt.trim().slice(0, 48).trim()}…` : prompt.trim()
 
   return {
+    ...emptyProductDraft,
     name: short || "Novo produto",
-    sku: "NOVO-SKU",
+    sku: suggestSku(short || "NOVO"),
     family: "Embalagem técnica",
     unit: "kg",
-    weightKg: "",
     description: prompt.trim() || "Descrição pendente de revisão.",
     notes: fromAttachment
       ? `Anexo ${attachmentName} considerado na extração (UI only).`
-      : "Rascunho genérico — revise nome, SKU e família antes de salvar.",
+      : "Rascunho genérico — revise nome, código e preços antes de salvar.",
   }
+}
+
+export function suggestSku(seed: string): string {
+  const slug = seed
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toUpperCase()
+    .replace(/[^A-Z0-9]+/g, "-")
+    .replace(/^-|-$/g, "")
+    .slice(0, 16)
+  const suffix = Math.floor(100 + Math.random() * 900)
+  return `${slug || "SKU"}-${suffix}`
 }
 
 export function findDuplicateProduct(
@@ -644,9 +836,24 @@ export function findDuplicateProduct(
   )
 }
 
+function parseOptionalNumber(value: string): number | null {
+  const trimmed = value.trim()
+  if (!trimmed) return null
+  const parsed = Number(trimmed.replace(",", "."))
+  return Number.isFinite(parsed) ? parsed : null
+}
+
+function formatStockHint(qty: number | null, unit: ProductUnit): string {
+  if (qty == null) return "—"
+  const formatted = new Intl.NumberFormat("pt-BR", {
+    maximumFractionDigits: 2,
+  }).format(qty)
+  return `${formatted} ${unit}`
+}
+
 export function draftToProduct(draft: ProductDraft, id: string): Product {
-  const weight = draft.weightKg.trim()
-  const parsed = weight ? Number(weight.replace(",", ".")) : null
+  const netWeight = parseOptionalNumber(draft.netWeightKg)
+  const stockQty = parseOptionalNumber(draft.stockQty)
 
   return {
     id,
@@ -654,12 +861,64 @@ export function draftToProduct(draft: ProductDraft, id: string): Product {
     sku: draft.sku.trim().toUpperCase() || "SEM-SKU",
     family: draft.family,
     unit: draft.unit,
-    weightKg: parsed !== null && Number.isFinite(parsed) ? parsed : null,
+    kind: draft.kind,
+    condition: draft.condition,
+    brand: draft.brand.trim(),
+    production: draft.production,
+    salePrice: parseOptionalNumber(draft.salePrice),
+    costPrice: parseOptionalNumber(draft.costPrice),
+    netWeightKg: netWeight,
+    grossWeightKg: parseOptionalNumber(draft.grossWeightKg),
+    widthCm: parseOptionalNumber(draft.widthCm),
+    heightCm: parseOptionalNumber(draft.heightCm),
+    depthCm: parseOptionalNumber(draft.depthCm),
+    gtin: draft.gtin.trim(),
+    ncm: draft.ncm.trim(),
+    stockQty,
+    stockMin: parseOptionalNumber(draft.stockMin),
+    location: draft.location.trim(),
     description: draft.description.trim(),
+    weightKg: netWeight,
     status: "ativo",
-    stockHint: "0 (novo)",
+    stockHint: formatStockHint(stockQty, draft.unit),
     updatedAt: new Date().toISOString().slice(0, 10),
   }
+}
+
+export function productToDraft(product: Product): ProductDraft {
+  const num = (value: number | null) => (value != null ? String(value) : "")
+  return {
+    name: product.name,
+    sku: product.sku,
+    family: product.family,
+    unit: product.unit,
+    kind: product.kind,
+    condition: product.condition,
+    brand: product.brand,
+    production: product.production,
+    salePrice: num(product.salePrice),
+    costPrice: num(product.costPrice),
+    netWeightKg: num(product.netWeightKg),
+    grossWeightKg: num(product.grossWeightKg),
+    widthCm: num(product.widthCm),
+    heightCm: num(product.heightCm),
+    depthCm: num(product.depthCm),
+    gtin: product.gtin,
+    ncm: product.ncm,
+    stockQty: num(product.stockQty),
+    stockMin: num(product.stockMin),
+    location: product.location,
+    description: product.description,
+    notes: "",
+  }
+}
+
+export function formatMoneyBRL(value: number | null): string {
+  if (value == null) return "—"
+  return new Intl.NumberFormat("pt-BR", {
+    style: "currency",
+    currency: "BRL",
+  }).format(value)
 }
 
 export function greetingForHour(hour: number): string {

@@ -13,8 +13,10 @@ import { ProductForm } from "@/components/products/product-form"
 import { Button } from "@/components/ui/button"
 import {
   draftToProduct,
+  emptyProductDraft,
   extractProductDraft,
   findDuplicateProduct,
+  productToDraft,
   type Product,
   type ProductDraft,
   type ProductFlowPhase,
@@ -26,28 +28,6 @@ import {
   useProducts,
 } from "@/lib/products-store"
 
-const emptyDraft: ProductDraft = {
-  name: "",
-  sku: "",
-  family: "Filme stretch",
-  unit: "kg",
-  weightKg: "",
-  description: "",
-  notes: "",
-}
-
-function productToDraft(product: Product): ProductDraft {
-  return {
-    name: product.name,
-    sku: product.sku,
-    family: product.family,
-    unit: product.unit,
-    weightKg: product.weightKg != null ? String(product.weightKg) : "",
-    description: product.description,
-    notes: "",
-  }
-}
-
 function ProductEditor({ editId }: { editId: string | null }) {
   const router = useRouter()
   const catalog = useProducts()
@@ -58,7 +38,7 @@ function ProductEditor({ editId }: { editId: string | null }) {
     editing ? "draft" : "empty"
   )
   const [draft, setDraft] = useState<ProductDraft>(() =>
-    editing ? productToDraft(editing) : emptyDraft
+    editing ? productToDraft(editing) : emptyProductDraft
   )
   const [duplicate, setDuplicate] = useState<Product | null>(null)
   const [messages, setMessages] = useState<ProductChatMessage[]>(() => [
@@ -95,7 +75,7 @@ function ProductEditor({ editId }: { editId: string | null }) {
       return
     }
     setPhase("empty")
-    setDraft(emptyDraft)
+    setDraft(emptyProductDraft)
     setDuplicate(null)
     setMessages([
       {
@@ -173,7 +153,6 @@ function ProductEditor({ editId }: { editId: string | null }) {
     if (editing) {
       const product = draftToProduct(draft, editing.id)
       product.status = editing.status
-      product.stockHint = editing.stockHint
       updateProduct(product)
     } else {
       addProduct(draftToProduct(draft, `prod-${Date.now()}`))
