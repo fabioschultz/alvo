@@ -127,6 +127,7 @@ export const navItems: NavItem[] = [
     href: "/estoque",
     icon: "inventory",
     children: [
+      { id: "inventory-products", label: "Produtos", href: "/estoque/produtos" },
       { id: "inventory-balances", label: "Saldos", href: "/estoque" },
       { id: "inventory-coverage", label: "Cobertura", href: "/estoque" },
     ],
@@ -461,6 +462,205 @@ export const shortcuts = [
   { id: "cash", label: "Caixa", icon: "currency" as const },
   { id: "new", label: "Novo", icon: "plus" as const },
 ]
+
+/** Cadastro de produtos — mocks tipados (sem Genkit / Firestore). */
+export type ProductStatus = "ativo" | "rascunho" | "inativo"
+
+export type ProductUnit = "kg" | "un" | "m" | "rolo" | "t"
+
+export type Product = {
+  id: string
+  name: string
+  sku: string
+  family: string
+  unit: ProductUnit
+  weightKg: number | null
+  description: string
+  status: ProductStatus
+  stockHint: string
+  updatedAt: string
+}
+
+export type ProductDraft = {
+  name: string
+  sku: string
+  family: string
+  unit: ProductUnit
+  weightKg: string
+  description: string
+  notes: string
+}
+
+export type ProductFlowPhase =
+  | "empty"
+  | "extracting"
+  | "draft"
+  | "duplicate"
+  | "saved"
+
+export const productFamilies = [
+  "Filme stretch",
+  "Sacos industriais",
+  "Granulado",
+  "Embalagem técnica",
+] as const
+
+export const productUnits: ProductUnit[] = ["kg", "un", "m", "rolo", "t"]
+
+export const initialProducts: Product[] = [
+  {
+    id: "prod-001",
+    name: "Filme stretch PP 500 mm natural",
+    sku: "PP-500-NAT",
+    family: "Filme stretch",
+    unit: "rolo",
+    weightKg: 12.5,
+    description: "Filme stretch em PP, largura 500 mm, bobina natural.",
+    status: "ativo",
+    stockHint: "84 rolos",
+    updatedAt: "2026-09-28",
+  },
+  {
+    id: "prod-002",
+    name: "Granulado PEAD reciclado preto",
+    sku: "PEAD-REC-PT",
+    family: "Granulado",
+    unit: "t",
+    weightKg: 1000,
+    description: "Granulado PEAD reciclado, cor preta, uso industrial.",
+    status: "ativo",
+    stockHint: "6,4 t",
+    updatedAt: "2026-09-27",
+  },
+  {
+    id: "prod-003",
+    name: "Saco tubular 40×60 brilhante",
+    sku: "SAC-40X60-BR",
+    family: "Sacos industriais",
+    unit: "un",
+    weightKg: 0.042,
+    description: "Saco tubular 40×60 cm, acabamento brilhante.",
+    status: "ativo",
+    stockHint: "12.400 un",
+    updatedAt: "2026-09-26",
+  },
+  {
+    id: "prod-004",
+    name: "Filme técnico barreira 3 camadas",
+    sku: "TEC-3L-120",
+    family: "Embalagem técnica",
+    unit: "kg",
+    weightKg: null,
+    description: "Filme barreira 3 camadas, espessura 120 µm (rascunho).",
+    status: "rascunho",
+    stockHint: "—",
+    updatedAt: "2026-09-25",
+  },
+]
+
+/**
+ * Heurística mock: interpreta o texto do usuário e monta um rascunho.
+ * Quando o texto sugere o SKU já existente PP-500-NAT, o fluxo dispara conflito.
+ */
+export function extractProductDraft(
+  prompt: string,
+  attachmentName?: string | null
+): ProductDraft {
+  const text = prompt.toLowerCase()
+  const fromAttachment = Boolean(attachmentName)
+
+  if (
+    text.includes("pp-500") ||
+    text.includes("pp 500") ||
+    (text.includes("stretch") && text.includes("500"))
+  ) {
+    return {
+      name: "Filme stretch PP 500 mm natural",
+      sku: "PP-500-NAT",
+      family: "Filme stretch",
+      unit: "rolo",
+      weightKg: "12.5",
+      description:
+        "Filme stretch em PP, largura 500 mm, bobina natural — extraído do pedido.",
+      notes: fromAttachment
+        ? `Campos inferidos a partir de ${attachmentName}.`
+        : "SKU coincide com produto já cadastrado (mock de duplicata).",
+    }
+  }
+
+  if (text.includes("pead") || text.includes("granulado")) {
+    return {
+      name: "Granulado PEAD natural extrusão",
+      sku: "PEAD-NAT-EX",
+      family: "Granulado",
+      unit: "t",
+      weightKg: "1000",
+      description: "Granulado PEAD natural para extrusão, uso industrial.",
+      notes: fromAttachment
+        ? `Referência anexada: ${attachmentName}.`
+        : "Família e unidade sugeridas pelo Alvo AI (mock).",
+    }
+  }
+
+  if (text.includes("saco") || text.includes("tubular")) {
+    return {
+      name: "Saco tubular 50×70 fosco",
+      sku: "SAC-50X70-FO",
+      family: "Sacos industriais",
+      unit: "un",
+      weightKg: "0.055",
+      description: "Saco tubular 50×70 cm, acabamento fosco.",
+      notes: "Dimensões e acabamento inferidos do texto (mock).",
+    }
+  }
+
+  const short =
+    prompt.trim().length > 48 ? `${prompt.trim().slice(0, 48).trim()}…` : prompt.trim()
+
+  return {
+    name: short || "Novo produto",
+    sku: "NOVO-SKU",
+    family: "Embalagem técnica",
+    unit: "kg",
+    weightKg: "",
+    description: prompt.trim() || "Descrição pendente de revisão.",
+    notes: fromAttachment
+      ? `Anexo ${attachmentName} considerado na extração (UI only).`
+      : "Rascunho genérico — revise nome, SKU e família antes de salvar.",
+  }
+}
+
+export function findDuplicateProduct(
+  draft: Pick<ProductDraft, "sku" | "name">,
+  catalog: Product[]
+): Product | null {
+  const sku = draft.sku.trim().toLowerCase()
+  const name = draft.name.trim().toLowerCase()
+  return (
+    catalog.find(
+      (item) =>
+        item.sku.toLowerCase() === sku || item.name.toLowerCase() === name
+    ) ?? null
+  )
+}
+
+export function draftToProduct(draft: ProductDraft, id: string): Product {
+  const weight = draft.weightKg.trim()
+  const parsed = weight ? Number(weight.replace(",", ".")) : null
+
+  return {
+    id,
+    name: draft.name.trim() || "Produto sem nome",
+    sku: draft.sku.trim().toUpperCase() || "SEM-SKU",
+    family: draft.family,
+    unit: draft.unit,
+    weightKg: parsed !== null && Number.isFinite(parsed) ? parsed : null,
+    description: draft.description.trim(),
+    status: "ativo",
+    stockHint: "0 (novo)",
+    updatedAt: new Date().toISOString().slice(0, 10),
+  }
+}
 
 export function greetingForHour(hour: number): string {
   if (hour < 12) return "Bom dia"
