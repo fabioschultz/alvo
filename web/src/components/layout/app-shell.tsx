@@ -27,7 +27,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <div className="flex h-dvh overflow-hidden bg-[#f6f7f9] text-foreground">
+    <div className="flex h-dvh overflow-hidden bg-slate-50 text-foreground">
       {mobileNavOpen ? (
         <button
           type="button"

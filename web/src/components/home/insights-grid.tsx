@@ -24,7 +24,7 @@ export function InsightsGrid() {
 
   return (
     <section aria-labelledby="insights-heading">
-      <div className="rounded-2xl border border-zinc-200/80 bg-white p-4 shadow-sm ring-1 ring-zinc-100 md:p-5">
+      <div className="rounded-2xl border border-blue-100/80 bg-white p-4 shadow-sm ring-1 ring-blue-50 md:p-5">
         <div className="mb-4 flex flex-wrap items-end justify-between gap-2">
           <div>
             <h2
@@ -32,11 +32,11 @@ export function InsightsGrid() {
               className="text-base font-semibold tracking-tight text-foreground"
             >
               Insights de hoje
-              <span className="ml-1.5 font-medium text-zinc-400">
+              <span className="ml-1.5 font-medium text-slate-400">
                 · {insights.length}
               </span>
             </h2>
-            <p className="mt-0.5 text-sm text-zinc-500">
+            <p className="mt-0.5 text-sm text-slate-500">
               {highPriorityCount} alta prioridade
             </p>
           </div>
@@ -52,8 +52,8 @@ export function InsightsGrid() {
                 onClick={() => setSelected(insight)}
                 className={cn(
                   "group flex items-center gap-2.5 rounded-xl px-2.5 py-2.5 text-left sm:gap-3 sm:px-3",
-                  "bg-zinc-50/80 ring-1 ring-zinc-200/70 transition-colors",
-                  "hover:bg-zinc-100/90 hover:ring-zinc-300",
+                  "bg-blue-50/50 ring-1 ring-slate-200/80 transition-colors",
+                  "hover:bg-blue-50 hover:ring-blue-200",
                   "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                 )}
               >
@@ -77,7 +77,7 @@ export function InsightsGrid() {
                 >
                   {priorityLabel[insight.priority]}
                 </Badge>
-                <ChevronRight className="size-4 shrink-0 text-zinc-300 transition-colors group-hover:text-zinc-500" />
+                <ChevronRight className="size-4 shrink-0 text-slate-300 transition-colors group-hover:text-slate-500" />
               </button>
             )
           })}

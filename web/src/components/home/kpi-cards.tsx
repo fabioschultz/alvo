@@ -24,19 +24,19 @@ const toneStyles: Record<
   { wrap: string; icon: string; spark: string }
 > = {
   green: {
-    wrap: "bg-emerald-50 text-emerald-600",
-    icon: "text-emerald-600",
-    spark: "stroke-emerald-500",
+    wrap: "bg-teal-50 text-teal-700",
+    icon: "text-teal-700",
+    spark: "stroke-teal-500",
   },
   orange: {
-    wrap: "bg-orange-50 text-orange-600",
-    icon: "text-orange-600",
-    spark: "stroke-orange-500",
+    wrap: "bg-indigo-50 text-indigo-600",
+    icon: "text-indigo-600",
+    spark: "stroke-indigo-500",
   },
   blue: {
-    wrap: "bg-sky-50 text-sky-600",
-    icon: "text-sky-600",
-    spark: "stroke-sky-500",
+    wrap: "bg-blue-50 text-blue-700",
+    icon: "text-blue-700",
+    spark: "stroke-blue-500",
   },
 }
 
@@ -74,12 +74,12 @@ export function KpiCards() {
           return (
             <Card
               key={kpi.id}
-              className="relative border-0 bg-white shadow-sm ring-1 ring-zinc-200/70"
+              className="relative border-0 bg-white shadow-sm ring-1 ring-slate-200/70"
             >
               <CardContent className="flex items-start justify-between gap-3 pt-1">
                 <div className="min-w-0">
                   <div className="flex items-center gap-1">
-                    <p className="text-sm text-zinc-500">{kpi.label}</p>
+                    <p className="text-sm text-slate-500">{kpi.label}</p>
                     <Tooltip>
                       <TooltipTrigger
                         render={
@@ -87,7 +87,7 @@ export function KpiCards() {
                             type="button"
                             variant="ghost"
                             size="icon-xs"
-                            className="size-6 text-zinc-400 hover:text-foreground"
+                            className="size-6 text-slate-400 hover:text-foreground"
                             aria-label={`Configurar ${kpi.label}`}
                           >
                             <Settings2 className="size-3.5" />
@@ -100,8 +100,8 @@ export function KpiCards() {
                   <p className="mt-1 text-2xl font-semibold tracking-tight text-foreground">
                     {kpi.value}
                   </p>
-                  <p className="mt-2 flex items-center gap-1 text-xs text-zinc-500">
-                    <TrendingUp className="size-3.5 text-emerald-500" />
+                  <p className="mt-2 flex items-center gap-1 text-xs text-slate-500">
+                    <TrendingUp className="size-3.5 text-blue-600" />
                     {kpi.delta}
                   </p>
                 </div>
