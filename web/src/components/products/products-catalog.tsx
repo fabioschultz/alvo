@@ -25,6 +25,7 @@ import { Input } from "@/components/ui/input"
 import { removeProduct, useProducts } from "@/lib/products-store"
 import { cn } from "@/lib/utils"
 import type { Product, ProductStatus } from "@/lib/mock-data"
+import { formatMoneyBRL } from "@/lib/mock-data"
 
 const statusStyles: Record<ProductStatus, string> = {
   ativo: "bg-teal-50 text-teal-800",
@@ -36,7 +37,9 @@ type ColumnId =
   | "name"
   | "sku"
   | "family"
+  | "brand"
   | "unit"
+  | "salePrice"
   | "weight"
   | "stock"
   | "status"
@@ -47,8 +50,10 @@ const COLUMN_DEFS: { id: ColumnId; label: string; defaultVisible: boolean }[] =
     { id: "name", label: "Produto", defaultVisible: true },
     { id: "sku", label: "SKU", defaultVisible: true },
     { id: "family", label: "Família", defaultVisible: true },
+    { id: "brand", label: "Marca", defaultVisible: false },
     { id: "unit", label: "Unidade", defaultVisible: true },
-    { id: "weight", label: "Peso", defaultVisible: false },
+    { id: "salePrice", label: "Preço", defaultVisible: true },
+    { id: "weight", label: "Peso líq.", defaultVisible: false },
     { id: "stock", label: "Estoque", defaultVisible: true },
     { id: "status", label: "Status", defaultVisible: true },
     { id: "updatedAt", label: "Atualizado", defaultVisible: false },
@@ -104,12 +109,22 @@ function cellValue(product: Product, column: ColumnId): React.ReactNode {
       )
     case "family":
       return <span className="text-slate-600">{product.family}</span>
+    case "brand":
+      return (
+        <span className="text-slate-600">{product.brand || "—"}</span>
+      )
     case "unit":
       return <span className="text-slate-600">{product.unit}</span>
+    case "salePrice":
+      return (
+        <span className="tabular-nums text-slate-700">
+          {formatMoneyBRL(product.salePrice)}
+        </span>
+      )
     case "weight":
       return (
         <span className="text-slate-600">
-          {product.weightKg != null ? `${product.weightKg} kg` : "—"}
+          {product.netWeightKg != null ? `${product.netWeightKg} kg` : "—"}
         </span>
       )
     case "stock":
