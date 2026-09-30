@@ -62,34 +62,55 @@ const COLUMN_DEFS: { id: ColumnId; label: string; defaultVisible: boolean }[] =
 const STORAGE_KEY = "alvo.products.visibleColumns"
 const columnListeners = new Set<() => void>()
 
-function defaultVisibleColumns(): ColumnId[] {
-  return COLUMN_DEFS.filter((col) => col.defaultVisible).map((col) => col.id)
+/** Referência estável — useSyncExternalStore exige getSnapshot idempotente. */
+const DEFAULT_VISIBLE_COLUMNS: ColumnId[] = COLUMN_DEFS.filter(
+  (col) => col.defaultVisible
+).map((col) => col.id)
+
+let cachedVisibleColumns: ColumnId[] | null = null
+
+function normalizeVisibleColumns(ids: string[]): ColumnId[] {
+  const valid = COLUMN_DEFS.map((col) => col.id)
+  const next = ids.filter((id): id is ColumnId => valid.includes(id as ColumnId))
+  return next.includes("name") ? next : ["name", ...next]
 }
 
-function readVisibleColumns(): ColumnId[] {
-  if (typeof window === "undefined") return defaultVisibleColumns()
+function readVisibleColumnsFromStorage(): ColumnId[] {
   try {
     const raw = window.localStorage.getItem(STORAGE_KEY)
-    if (!raw) return defaultVisibleColumns()
+    if (!raw) return DEFAULT_VISIBLE_COLUMNS
     const parsed = JSON.parse(raw) as string[]
-    const valid = COLUMN_DEFS.map((col) => col.id)
-    const next = parsed.filter((id): id is ColumnId =>
-      valid.includes(id as ColumnId)
-    )
-    return next.includes("name") ? next : ["name", ...next]
+    if (!Array.isArray(parsed)) return DEFAULT_VISIBLE_COLUMNS
+    return normalizeVisibleColumns(parsed)
   } catch {
-    return defaultVisibleColumns()
+    return DEFAULT_VISIBLE_COLUMNS
   }
 }
 
+function getVisibleColumnsSnapshot(): ColumnId[] {
+  if (cachedVisibleColumns) return cachedVisibleColumns
+  cachedVisibleColumns = readVisibleColumnsFromStorage()
+  return cachedVisibleColumns
+}
+
+function getVisibleColumnsServerSnapshot(): ColumnId[] {
+  return DEFAULT_VISIBLE_COLUMNS
+}
+
 function writeVisibleColumns(next: ColumnId[]) {
-  window.localStorage.setItem(STORAGE_KEY, JSON.stringify(next))
+  cachedVisibleColumns = normalizeVisibleColumns(next)
+  window.localStorage.setItem(
+    STORAGE_KEY,
+    JSON.stringify(cachedVisibleColumns)
+  )
   columnListeners.forEach((listener) => listener())
 }
 
 function subscribeColumns(listener: () => void) {
   columnListeners.add(listener)
-  return () => columnListeners.delete(listener)
+  return () => {
+    columnListeners.delete(listener)
+  }
 }
 
 function cellValue(product: Product, column: ColumnId): React.ReactNode {
@@ -157,8 +178,8 @@ export function ProductsCatalog() {
   const [query, setQuery] = useState("")
   const visibleColumns = useSyncExternalStore(
     subscribeColumns,
-    readVisibleColumns,
-    defaultVisibleColumns
+    getVisibleColumnsSnapshot,
+    getVisibleColumnsServerSnapshot
   )
   const [columnsOpen, setColumnsOpen] = useState(false)
   const columnsRef = useRef<HTMLDivElement>(null)
@@ -238,7 +259,7 @@ export function ProductsCatalog() {
                 value={query}
                 onChange={(event) => setQuery(event.target.value)}
                 type="search"
-                placeholder="Buscar por nome, SKU ou família…"
+                placeholder="Buscar por nome, SKU ou categoria…"
                 aria-label="Buscar produtos"
                 className="h-9 rounded-lg border-slate-200 bg-white pl-8 text-sm shadow-none"
               />
