@@ -1,7 +1,7 @@
 "use client"
 
 import Link from "next/link"
-import { useEffect, useMemo, useRef, useState } from "react"
+import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react"
 import {
   Columns3,
   Pencil,
@@ -55,12 +55,13 @@ const COLUMN_DEFS: { id: ColumnId; label: string; defaultVisible: boolean }[] =
   ]
 
 const STORAGE_KEY = "alvo.products.visibleColumns"
+const columnListeners = new Set<() => void>()
 
 function defaultVisibleColumns(): ColumnId[] {
   return COLUMN_DEFS.filter((col) => col.defaultVisible).map((col) => col.id)
 }
 
-function loadVisibleColumns(): ColumnId[] {
+function readVisibleColumns(): ColumnId[] {
   if (typeof window === "undefined") return defaultVisibleColumns()
   try {
     const raw = window.localStorage.getItem(STORAGE_KEY)
@@ -74,6 +75,16 @@ function loadVisibleColumns(): ColumnId[] {
   } catch {
     return defaultVisibleColumns()
   }
+}
+
+function writeVisibleColumns(next: ColumnId[]) {
+  window.localStorage.setItem(STORAGE_KEY, JSON.stringify(next))
+  columnListeners.forEach((listener) => listener())
+}
+
+function subscribeColumns(listener: () => void) {
+  columnListeners.add(listener)
+  return () => columnListeners.delete(listener)
 }
 
 function cellValue(product: Product, column: ColumnId): React.ReactNode {
@@ -125,20 +136,14 @@ function cellValue(product: Product, column: ColumnId): React.ReactNode {
 export function ProductsCatalog() {
   const products = useProducts()
   const [query, setQuery] = useState("")
-  const [visibleColumns, setVisibleColumns] = useState<ColumnId[]>(
+  const visibleColumns = useSyncExternalStore(
+    subscribeColumns,
+    readVisibleColumns,
     defaultVisibleColumns
   )
   const [columnsOpen, setColumnsOpen] = useState(false)
   const columnsRef = useRef<HTMLDivElement>(null)
   const [pendingDelete, setPendingDelete] = useState<Product | null>(null)
-
-  useEffect(() => {
-    setVisibleColumns(loadVisibleColumns())
-  }, [])
-
-  useEffect(() => {
-    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(visibleColumns))
-  }, [visibleColumns])
 
   useEffect(() => {
     if (!columnsOpen) return
@@ -175,11 +180,10 @@ export function ProductsCatalog() {
 
   function toggleColumn(id: ColumnId) {
     if (id === "name") return
-    setVisibleColumns((current) =>
-      current.includes(id)
-        ? current.filter((item) => item !== id)
-        : [...current, id]
-    )
+    const next = visibleColumns.includes(id)
+      ? visibleColumns.filter((item) => item !== id)
+      : [...visibleColumns, id]
+    writeVisibleColumns(next)
   }
 
   return (

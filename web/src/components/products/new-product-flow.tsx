@@ -48,67 +48,35 @@ function productToDraft(product: Product): ProductDraft {
   }
 }
 
-function NewProductFlowInner() {
+function ProductEditor({ editId }: { editId: string | null }) {
   const router = useRouter()
-  const searchParams = useSearchParams()
-  const editId = searchParams.get("id")
   const catalog = useProducts()
   const editing = editId ? getProductById(editId) : undefined
   const mode = editing ? "edit" : "create"
 
-  const [phase, setPhase] = useState<ProductFlowPhase>("empty")
-  const [draft, setDraft] = useState<ProductDraft>(emptyDraft)
+  const [phase, setPhase] = useState<ProductFlowPhase>(
+    editing ? "draft" : "empty"
+  )
+  const [draft, setDraft] = useState<ProductDraft>(() =>
+    editing ? productToDraft(editing) : emptyDraft
+  )
   const [duplicate, setDuplicate] = useState<Product | null>(null)
-  const [messages, setMessages] = useState<ProductChatMessage[]>([])
+  const [messages, setMessages] = useState<ProductChatMessage[]>(() => [
+    {
+      id: "welcome",
+      role: "assistant",
+      text: editing
+        ? `Editando “${editing.name}”. Peça ajustes aqui ou altere o formulário diretamente.`
+        : "Preencha o formulário ao lado — ou me descreva o produto que eu monto os campos pra você.",
+    },
+  ])
   const extractTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
-  const loadedEditId = useRef<string | null>(null)
 
   useEffect(() => {
     return () => {
       if (extractTimer.current) clearTimeout(extractTimer.current)
     }
   }, [])
-
-  useEffect(() => {
-    if (editing && loadedEditId.current !== editing.id) {
-      loadedEditId.current = editing.id
-      setDraft(productToDraft(editing))
-      setPhase("draft")
-      setDuplicate(null)
-      setMessages([
-        {
-          id: `edit-${editing.id}`,
-          role: "assistant",
-          text: `Editando “${editing.name}”. Peça ajustes aqui ou altere o formulário diretamente.`,
-        },
-      ])
-      return
-    }
-
-    if (!editing && loadedEditId.current !== null) {
-      loadedEditId.current = null
-      setDraft(emptyDraft)
-      setPhase("empty")
-      setDuplicate(null)
-      setMessages([
-        {
-          id: "welcome",
-          role: "assistant",
-          text: "Preencha o formulário ao lado — ou me descreva o produto que eu monto os campos pra você.",
-        },
-      ])
-    }
-
-    if (!editing && messages.length === 0) {
-      setMessages([
-        {
-          id: "welcome",
-          role: "assistant",
-          text: "Preencha o formulário ao lado — ou me descreva o produto que eu monto os campos pra você.",
-        },
-      ])
-    }
-  }, [editing, messages.length])
 
   function resetFlow() {
     if (extractTimer.current) clearTimeout(extractTimer.current)
@@ -290,6 +258,12 @@ function NewProductFlowInner() {
       </div>
     </div>
   )
+}
+
+function NewProductFlowInner() {
+  const searchParams = useSearchParams()
+  const editId = searchParams.get("id")
+  return <ProductEditor key={editId ?? "new"} editId={editId} />
 }
 
 export function NewProductFlow() {
