@@ -67,7 +67,19 @@ export function AppSidebar({
 }: AppSidebarProps) {
   const pathname = usePathname()
   const [query, setQuery] = useState("")
-  const [openIds, setOpenIds] = useState<string[]>([])
+  const [openIds, setOpenIds] = useState<string[]>(() =>
+    navItems
+      .filter(
+        (item) =>
+          item.children?.some((child) =>
+            child.href !== item.href
+              ? pathname === child.href ||
+                pathname.startsWith(`${child.href}/`)
+              : pathname === child.href
+          ) ?? false
+      )
+      .map((item) => item.id)
+  )
 
   const filteredItems = useMemo(() => {
     const q = query.trim().toLowerCase()
@@ -93,6 +105,30 @@ export function AppSidebar({
   }
 
   const searching = query.trim().length > 0
+
+  function isChildActive(childHref: string, parentHref: string) {
+    if (pathname === childHref) return true
+    // Nested routes (ex.: /estoque/produtos/novo), sem ativar irmãos que
+    // compartilham o href do pai (ex.: Saldos → /estoque).
+    if (
+      childHref !== parentHref &&
+      pathname.startsWith(`${childHref}/`)
+    ) {
+      return true
+    }
+    return false
+  }
+
+  function isItemActive(item: NavItem) {
+    if (item.children?.length) {
+      return item.children.some((child) =>
+        isChildActive(child.href, item.href)
+      )
+    }
+    return item.href === "/"
+      ? pathname === "/"
+      : pathname === item.href || pathname.startsWith(`${item.href}/`)
+  }
 
   return (
     <aside
@@ -142,11 +178,9 @@ export function AppSidebar({
         {filteredItems.map((item) => {
           const Icon = iconMap[item.icon]
           const hasChildren = Boolean(item.children?.length)
-          const active =
-            item.href === "/"
-              ? pathname === "/"
-              : pathname.startsWith(item.href)
-          const open = searching || openIds.includes(item.id)
+          const active = isItemActive(item)
+          const open =
+            searching || openIds.includes(item.id) || active
 
           return (
             <div key={item.id} className="space-y-0.5">
@@ -184,16 +218,24 @@ export function AppSidebar({
 
               {hasChildren && open ? (
                 <div className="ml-4 space-y-0.5 border-l border-slate-200 pl-3">
-                  {item.children!.map((child) => (
-                    <Link
-                      key={child.id}
-                      href={child.href}
-                      onClick={onNavigate}
-                      className="block rounded-md px-2 py-1.5 text-sm text-slate-500 transition-colors hover:bg-slate-50 hover:text-foreground"
-                    >
-                      {child.label}
-                    </Link>
-                  ))}
+                  {item.children!.map((child) => {
+                    const childActive = isChildActive(child.href, item.href)
+                    return (
+                      <Link
+                        key={child.id}
+                        href={child.href}
+                        onClick={onNavigate}
+                        className={cn(
+                          "block rounded-md px-2 py-1.5 text-sm transition-colors",
+                          childActive
+                            ? "bg-blue-50 font-medium text-blue-800"
+                            : "text-slate-500 hover:bg-slate-50 hover:text-foreground"
+                        )}
+                      >
+                        {child.label}
+                      </Link>
+                    )
+                  })}
                 </div>
               ) : null}
             </div>
