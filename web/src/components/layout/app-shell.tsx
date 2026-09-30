@@ -6,6 +6,7 @@ import { AppSidebar } from "@/components/layout/app-sidebar"
 import { AppTopbar } from "@/components/layout/app-topbar"
 
 export function AppShell({ children }: { children: React.ReactNode }) {
+  const [desktopCollapsed, setDesktopCollapsed] = useState(false)
   const [mobileNavOpen, setMobileNavOpen] = useState(false)
 
   useEffect(() => {
@@ -16,6 +17,14 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       document.body.style.overflow = previous
     }
   }, [mobileNavOpen])
+
+  function toggleNav() {
+    if (typeof window !== "undefined" && window.matchMedia("(min-width: 768px)").matches) {
+      setDesktopCollapsed((current) => !current)
+      return
+    }
+    setMobileNavOpen((current) => !current)
+  }
 
   return (
     <div className="flex h-dvh overflow-hidden bg-[#f6f7f9] text-foreground">
@@ -29,13 +38,17 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       ) : null}
 
       <AppSidebar
+        desktopCollapsed={desktopCollapsed}
         mobileOpen={mobileNavOpen}
         onNavigate={() => setMobileNavOpen(false)}
-        onClose={() => setMobileNavOpen(false)}
+        onClose={() => {
+          setMobileNavOpen(false)
+          setDesktopCollapsed(true)
+        }}
       />
 
       <div className="flex min-w-0 flex-1 flex-col">
-        <AppTopbar onOpenNav={() => setMobileNavOpen(true)} />
+        <AppTopbar onToggleNav={toggleNav} />
         <main className="flex min-h-0 flex-1 flex-col">{children}</main>
       </div>
     </div>

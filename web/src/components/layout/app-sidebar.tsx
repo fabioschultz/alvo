@@ -53,21 +53,21 @@ function matchesQuery(label: string, query: string) {
 }
 
 type AppSidebarProps = {
+  desktopCollapsed?: boolean
   mobileOpen?: boolean
   onNavigate?: () => void
   onClose?: () => void
 }
 
 export function AppSidebar({
+  desktopCollapsed = false,
   mobileOpen = false,
   onNavigate,
   onClose,
 }: AppSidebarProps) {
   const pathname = usePathname()
   const [query, setQuery] = useState("")
-  const [openIds, setOpenIds] = useState<string[]>(() =>
-    navItems.filter((item) => item.children?.length).map((item) => item.id)
-  )
+  const [openIds, setOpenIds] = useState<string[]>([])
 
   const filteredItems = useMemo(() => {
     const q = query.trim().toLowerCase()
@@ -92,12 +92,17 @@ export function AppSidebar({
     )
   }
 
+  const searching = query.trim().length > 0
+
   return (
     <aside
       className={cn(
         "flex h-full w-[min(288px,88vw)] shrink-0 flex-col border-r border-border/80 bg-white",
-        "fixed inset-y-0 left-0 z-50 transition-transform duration-200 md:static md:z-auto md:w-[260px] md:translate-x-0",
-        mobileOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"
+        "fixed inset-y-0 left-0 z-50 transition-transform duration-200",
+        mobileOpen ? "translate-x-0" : "-translate-x-full",
+        desktopCollapsed
+          ? "md:hidden"
+          : "md:static md:z-auto md:w-[260px] md:translate-x-0"
       )}
     >
       <div className="flex h-14 items-center gap-2.5 px-4 md:h-16 md:px-5">
@@ -111,8 +116,8 @@ export function AppSidebar({
           type="button"
           variant="ghost"
           size="icon"
-          className="size-9 md:hidden"
-          aria-label="Fechar menu"
+          className="size-9"
+          aria-label="Esconder menu"
           onClick={onClose}
         >
           <X className="size-4" />
@@ -141,7 +146,7 @@ export function AppSidebar({
             item.href === "/"
               ? pathname === "/"
               : pathname.startsWith(item.href)
-          const open = Boolean(query) || openIds.includes(item.id)
+          const open = searching || openIds.includes(item.id)
 
           return (
             <div key={item.id} className="space-y-0.5">
