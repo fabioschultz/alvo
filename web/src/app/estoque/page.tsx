@@ -11,15 +11,20 @@ export default function EstoquePage() {
           Visão geral
         </h1>
         <p className="max-w-xl text-sm leading-relaxed text-slate-500">
-          Saldos e cobertura entram numa etapa seguinte. O cadastro de produtos
-          com Alvo AI já está disponível para iteração visual.
+          Produtos e categorias já estão no protótipo. Saldos e cobertura entram
+          numa etapa seguinte.
         </p>
-        <Button
-          className="mt-4 w-fit"
-          render={<Link href="/estoque/produtos" />}
-        >
-          Ir para Produtos
-        </Button>
+        <div className="mt-4 flex flex-wrap gap-2">
+          <Button render={<Link href="/estoque/produtos" />}>
+            Produtos
+          </Button>
+          <Button
+            variant="outline"
+            render={<Link href="/estoque/categorias" />}
+          >
+            Categorias
+          </Button>
+        </div>
       </div>
     </div>
   )

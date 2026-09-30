@@ -1,3 +1,5 @@
+import { getCategoryPath } from "@/lib/categories-store"
+
 export type NavChild = {
   id: string
   label: string
@@ -128,6 +130,11 @@ export const navItems: NavItem[] = [
     icon: "inventory",
     children: [
       { id: "inventory-products", label: "Produtos", href: "/estoque/produtos" },
+      {
+        id: "inventory-categories",
+        label: "Categorias",
+        href: "/estoque/categorias",
+      },
       { id: "inventory-balances", label: "Saldos", href: "/estoque" },
       { id: "inventory-coverage", label: "Cobertura", href: "/estoque" },
     ],
@@ -478,7 +485,10 @@ export type Product = {
   id: string
   name: string
   sku: string
-  family: string
+  /** Categoria (tenant) — id do nó na árvore. */
+  categoryId: string | null
+  /** Path legível cacheado p/ lista (ex.: "Filme · Stretch · PP"). */
+  categoryPath: string
   unit: ProductUnit
   kind: ProductKind
   condition: ProductCondition
@@ -507,7 +517,7 @@ export type Product = {
 export type ProductDraft = {
   name: string
   sku: string
-  family: string
+  categoryId: string
   unit: ProductUnit
   kind: ProductKind
   condition: ProductCondition
@@ -536,13 +546,6 @@ export type ProductFlowPhase =
   | "duplicate"
   | "saved"
 
-export const productFamilies = [
-  "Filme stretch",
-  "Sacos industriais",
-  "Granulado",
-  "Embalagem técnica",
-] as const
-
 export const productUnits: ProductUnit[] = ["kg", "un", "pc", "cx", "m", "rolo", "t"]
 
 export const productKinds: { value: ProductKind; label: string }[] = [
@@ -566,7 +569,7 @@ export const productProductions: { value: ProductProduction; label: string }[] =
 export const emptyProductDraft: ProductDraft = {
   name: "",
   sku: "",
-  family: "Filme stretch",
+  categoryId: "cat-filme-stretch-pp",
   unit: "un",
   kind: "produto",
   condition: "novo",
@@ -593,7 +596,8 @@ export const initialProducts: Product[] = [
     id: "prod-001",
     name: "Filme stretch PP 500 mm natural",
     sku: "PP-500-NAT",
-    family: "Filme stretch",
+    categoryId: "cat-filme-stretch-pp",
+    categoryPath: "Filme · Stretch · PP",
     unit: "rolo",
     kind: "produto",
     condition: "novo",
@@ -621,7 +625,8 @@ export const initialProducts: Product[] = [
     id: "prod-002",
     name: "Granulado PEAD reciclado preto",
     sku: "PEAD-REC-PT",
-    family: "Granulado",
+    categoryId: "cat-granulado-pead",
+    categoryPath: "Granulado · PEAD",
     unit: "t",
     kind: "produto",
     condition: "novo",
@@ -649,7 +654,8 @@ export const initialProducts: Product[] = [
     id: "prod-003",
     name: "Saco tubular 40×60 brilhante",
     sku: "SAC-40X60-BR",
-    family: "Sacos industriais",
+    categoryId: "cat-sacos-tubular",
+    categoryPath: "Sacos · Tubular",
     unit: "un",
     kind: "produto",
     condition: "novo",
@@ -677,7 +683,8 @@ export const initialProducts: Product[] = [
     id: "prod-004",
     name: "Filme técnico barreira 3 camadas",
     sku: "TEC-3L-120",
-    family: "Embalagem técnica",
+    categoryId: "cat-embalagem-tecnica",
+    categoryPath: "Embalagem · Técnica",
     unit: "kg",
     kind: "produto",
     condition: "novo",
@@ -726,7 +733,7 @@ export function extractProductDraft(
       ...emptyProductDraft,
       name: "Filme stretch PP 500 mm natural",
       sku: "PP-500-NAT",
-      family: "Filme stretch",
+      categoryId: "cat-filme-stretch-pp",
       unit: "rolo",
       brand: "Alvo",
       salePrice: "89.90",
@@ -754,7 +761,7 @@ export function extractProductDraft(
       ...emptyProductDraft,
       name: "Granulado PEAD natural extrusão",
       sku: "PEAD-NAT-EX",
-      family: "Granulado",
+      categoryId: "cat-granulado-pead",
       unit: "t",
       brand: "Alvo Recicla",
       salePrice: "4200",
@@ -775,7 +782,7 @@ export function extractProductDraft(
       ...emptyProductDraft,
       name: "Saco tubular 50×70 fosco",
       sku: "SAC-50X70-FO",
-      family: "Sacos industriais",
+      categoryId: "cat-sacos-tubular",
       unit: "un",
       brand: "Alvo",
       salePrice: "0.55",
@@ -801,7 +808,7 @@ export function extractProductDraft(
     ...emptyProductDraft,
     name: short || "Novo produto",
     sku: suggestSku(short || "NOVO"),
-    family: "Embalagem técnica",
+    categoryId: "cat-embalagem-tecnica",
     unit: "kg",
     description: prompt.trim() || "Descrição pendente de revisão.",
     notes: fromAttachment
@@ -854,12 +861,14 @@ function formatStockHint(qty: number | null, unit: ProductUnit): string {
 export function draftToProduct(draft: ProductDraft, id: string): Product {
   const netWeight = parseOptionalNumber(draft.netWeightKg)
   const stockQty = parseOptionalNumber(draft.stockQty)
+  const categoryId = draft.categoryId || null
 
   return {
     id,
     name: draft.name.trim() || "Produto sem nome",
     sku: draft.sku.trim().toUpperCase() || "SEM-SKU",
-    family: draft.family,
+    categoryId,
+    categoryPath: categoryId ? getCategoryPath(categoryId) : "",
     unit: draft.unit,
     kind: draft.kind,
     condition: draft.condition,
@@ -890,7 +899,7 @@ export function productToDraft(product: Product): ProductDraft {
   return {
     name: product.name,
     sku: product.sku,
-    family: product.family,
+    categoryId: product.categoryId ?? "",
     unit: product.unit,
     kind: product.kind,
     condition: product.condition,
