@@ -12,9 +12,11 @@ import {
   ShoppingBag,
   ShoppingCart,
   Wallet,
+  X,
 } from "lucide-react"
 
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
+import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { cn } from "@/lib/utils"
 import { currentUser, navItems, type NavItem } from "@/lib/mock-data"
@@ -50,7 +52,17 @@ function matchesQuery(label: string, query: string) {
   return label.toLowerCase().includes(query.trim().toLowerCase())
 }
 
-export function AppSidebar() {
+type AppSidebarProps = {
+  mobileOpen?: boolean
+  onNavigate?: () => void
+  onClose?: () => void
+}
+
+export function AppSidebar({
+  mobileOpen = false,
+  onNavigate,
+  onClose,
+}: AppSidebarProps) {
   const pathname = usePathname()
   const [query, setQuery] = useState("")
   const [openIds, setOpenIds] = useState<string[]>(() =>
@@ -81,14 +93,30 @@ export function AppSidebar() {
   }
 
   return (
-    <aside className="flex h-full w-[260px] shrink-0 flex-col border-r border-border/80 bg-white">
-      <div className="flex h-16 items-center gap-2.5 px-5">
+    <aside
+      className={cn(
+        "flex h-full w-[min(288px,88vw)] shrink-0 flex-col border-r border-border/80 bg-white",
+        "fixed inset-y-0 left-0 z-50 transition-transform duration-200 md:static md:z-auto md:w-[260px] md:translate-x-0",
+        mobileOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"
+      )}
+    >
+      <div className="flex h-14 items-center gap-2.5 px-4 md:h-16 md:px-5">
         <AlvoLogo className="text-foreground" />
-        <div className="leading-tight">
+        <div className="min-w-0 flex-1 leading-tight">
           <p className="text-[15px] font-semibold tracking-tight text-foreground">
             alvo <span className="font-medium text-foreground/70">AI</span>
           </p>
         </div>
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon"
+          className="size-9 md:hidden"
+          aria-label="Fechar menu"
+          onClick={onClose}
+        >
+          <X className="size-4" />
+        </Button>
       </div>
 
       <div className="px-3 pb-2">
@@ -120,6 +148,7 @@ export function AppSidebar() {
               <div className="flex items-center gap-0.5">
                 <Link
                   href={item.href}
+                  onClick={onNavigate}
                   className={cn(
                     "flex min-w-0 flex-1 items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors",
                     active
@@ -154,6 +183,7 @@ export function AppSidebar() {
                     <Link
                       key={child.id}
                       href={child.href}
+                      onClick={onNavigate}
                       className="block rounded-md px-2 py-1.5 text-sm text-zinc-500 transition-colors hover:bg-zinc-50 hover:text-foreground"
                     >
                       {child.label}

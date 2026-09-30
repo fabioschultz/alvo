@@ -66,7 +66,7 @@ function Sparkline({ className }: { className?: string }) {
 export function KpiCards() {
   return (
     <TooltipProvider delay={200}>
-      <section aria-label="Indicadores" className="grid gap-4 md:grid-cols-3">
+      <section aria-label="Indicadores" className="grid gap-3 sm:grid-cols-2 md:grid-cols-3 md:gap-4">
         {kpis.map((kpi) => {
           const Icon = iconMap[kpi.icon]
           const tone = toneStyles[kpi.tone]
