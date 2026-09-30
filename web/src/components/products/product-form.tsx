@@ -9,7 +9,6 @@ import { Input } from "@/components/ui/input"
 import { cn } from "@/lib/utils"
 import {
   productConditions,
-  productFamilies,
   productKinds,
   productProductions,
   productUnits,
@@ -22,6 +21,11 @@ import {
   type ProductProduction,
   type ProductUnit,
 } from "@/lib/mock-data"
+import {
+  flattenCategoryOptions,
+  getCategoryPath,
+  useCategories,
+} from "@/lib/categories-store"
 
 type ProductFormProps = {
   mode: "create" | "edit"
@@ -98,6 +102,10 @@ export function ProductForm({
 }: ProductFormProps) {
   const locked = phase === "extracting" || phase === "saved"
   const showSaved = phase === "saved"
+  const categories = useCategories()
+  const categoryOptions = flattenCategoryOptions(categories, {
+    activeOnly: true,
+  })
 
   function patch(partial: Partial<ProductDraft>) {
     onChange({ ...draft, ...partial })
@@ -213,7 +221,9 @@ export function ProductForm({
                 className="h-9 gap-1.5"
                 disabled={locked}
                 onClick={() =>
-                  patch({ sku: suggestSku(draft.name || draft.family || "SKU") })
+                  patch({
+                    sku: suggestSku(draft.name || getCategoryPath(draft.categoryId) || "SKU"),
+                  })
                 }
               >
                 <Sparkles className="size-3.5" />
@@ -252,7 +262,7 @@ export function ProductForm({
             </Field>
           </div>
 
-          <div className="grid gap-3 sm:grid-cols-3">
+          <div className="grid gap-3 sm:grid-cols-2">
             <Field label="Tipo" htmlFor="product-kind">
               <select
                 id="product-kind"
@@ -289,22 +299,35 @@ export function ProductForm({
                 ))}
               </select>
             </Field>
-            <Field label="Família / categoria" htmlFor="product-family">
-              <select
-                id="product-family"
-                className={selectClass}
-                value={draft.family}
-                disabled={locked}
-                onChange={(event) => patch({ family: event.target.value })}
-              >
-                {productFamilies.map((family) => (
-                  <option key={family} value={family}>
-                    {family}
-                  </option>
-                ))}
-              </select>
-            </Field>
           </div>
+
+          <Field label="Categoria" htmlFor="product-category">
+            <select
+              id="product-category"
+              className={selectClass}
+              value={draft.categoryId}
+              disabled={locked || categoryOptions.length === 0}
+              onChange={(event) => patch({ categoryId: event.target.value })}
+            >
+              {categoryOptions.length === 0 ? (
+                <option value="">
+                  Cadastre categorias em Estoque → Categorias
+                </option>
+              ) : (
+                categoryOptions.map((item) => (
+                  <option key={item.id} value={item.id}>
+                    {"— ".repeat(item.depth)}
+                    {item.label}
+                  </option>
+                ))
+              )}
+            </select>
+            {draft.categoryId ? (
+              <span className="mt-1 block text-[11px] text-slate-400">
+                {getCategoryPath(draft.categoryId)}
+              </span>
+            ) : null}
+          </Field>
         </Section>
 
         <Section

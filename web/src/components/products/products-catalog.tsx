@@ -36,7 +36,7 @@ const statusStyles: Record<ProductStatus, string> = {
 type ColumnId =
   | "name"
   | "sku"
-  | "family"
+  | "category"
   | "brand"
   | "unit"
   | "salePrice"
@@ -49,7 +49,7 @@ const COLUMN_DEFS: { id: ColumnId; label: string; defaultVisible: boolean }[] =
   [
     { id: "name", label: "Produto", defaultVisible: true },
     { id: "sku", label: "SKU", defaultVisible: true },
-    { id: "family", label: "Família", defaultVisible: true },
+    { id: "category", label: "Categoria", defaultVisible: true },
     { id: "brand", label: "Marca", defaultVisible: false },
     { id: "unit", label: "Unidade", defaultVisible: true },
     { id: "salePrice", label: "Preço", defaultVisible: true },
@@ -107,8 +107,12 @@ function cellValue(product: Product, column: ColumnId): React.ReactNode {
       return (
         <span className="font-mono text-xs text-slate-600">{product.sku}</span>
       )
-    case "family":
-      return <span className="text-slate-600">{product.family}</span>
+    case "category":
+      return (
+        <span className="text-slate-600">
+          {product.categoryPath || "—"}
+        </span>
+      )
     case "brand":
       return (
         <span className="text-slate-600">{product.brand || "—"}</span>
@@ -185,7 +189,7 @@ export function ProductsCatalog() {
       (item) =>
         item.name.toLowerCase().includes(q) ||
         item.sku.toLowerCase().includes(q) ||
-        item.family.toLowerCase().includes(q)
+        item.categoryPath.toLowerCase().includes(q)
     )
   }, [products, query])
 
