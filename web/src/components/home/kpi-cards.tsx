@@ -1,11 +1,21 @@
+"use client"
+
 import {
   AlertTriangle,
   Factory,
+  Settings2,
   TrendingUp,
   Wallet,
 } from "lucide-react"
 
+import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip"
 import { cn } from "@/lib/utils"
 import { kpis, type KpiCard, type KpiTone } from "@/lib/mock-data"
 
@@ -55,44 +65,64 @@ function Sparkline({ className }: { className?: string }) {
 
 export function KpiCards() {
   return (
-    <section aria-label="Indicadores" className="grid gap-4 md:grid-cols-3">
-      {kpis.map((kpi) => {
-        const Icon = iconMap[kpi.icon]
-        const tone = toneStyles[kpi.tone]
+    <TooltipProvider delay={200}>
+      <section aria-label="Indicadores" className="grid gap-4 md:grid-cols-3">
+        {kpis.map((kpi) => {
+          const Icon = iconMap[kpi.icon]
+          const tone = toneStyles[kpi.tone]
 
-        return (
-          <Card
-            key={kpi.id}
-            className="border-0 bg-white shadow-sm ring-1 ring-zinc-200/70"
-          >
-            <CardContent className="flex items-start justify-between gap-3 pt-1">
-              <div className="min-w-0">
-                <p className="text-sm text-zinc-500">{kpi.label}</p>
-                <p className="mt-1 text-2xl font-semibold tracking-tight text-foreground">
-                  {kpi.value}
-                </p>
-                <p className="mt-2 flex items-center gap-1 text-xs text-zinc-500">
-                  <TrendingUp className="size-3.5 text-emerald-500" />
-                  {kpi.delta}
-                </p>
-              </div>
-              <div className="flex flex-col items-end gap-3">
-                <div
-                  className={cn(
-                    "flex size-10 items-center justify-center rounded-xl",
-                    tone.wrap
-                  )}
-                >
-                  <Icon className={cn("size-5", tone.icon)} />
+          return (
+            <Card
+              key={kpi.id}
+              className="relative border-0 bg-white shadow-sm ring-1 ring-zinc-200/70"
+            >
+              <CardContent className="flex items-start justify-between gap-3 pt-1">
+                <div className="min-w-0">
+                  <div className="flex items-center gap-1">
+                    <p className="text-sm text-zinc-500">{kpi.label}</p>
+                    <Tooltip>
+                      <TooltipTrigger
+                        render={
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon-xs"
+                            className="size-6 text-zinc-400 hover:text-foreground"
+                            aria-label={`Configurar ${kpi.label}`}
+                          />
+                        }
+                      >
+                        <Settings2 className="size-3.5" />
+                      </TooltipTrigger>
+                      <TooltipContent>Configurar indicador</TooltipContent>
+                    </Tooltip>
+                  </div>
+                  <p className="mt-1 text-2xl font-semibold tracking-tight text-foreground">
+                    {kpi.value}
+                  </p>
+                  <p className="mt-2 flex items-center gap-1 text-xs text-zinc-500">
+                    <TrendingUp className="size-3.5 text-emerald-500" />
+                    {kpi.delta}
+                  </p>
                 </div>
-                {kpi.tone !== "orange" ? (
-                  <Sparkline className={tone.spark} />
-                ) : null}
-              </div>
-            </CardContent>
-          </Card>
-        )
-      })}
-    </section>
+                <div className="flex flex-col items-end gap-3">
+                  <div
+                    className={cn(
+                      "flex size-10 items-center justify-center rounded-xl",
+                      tone.wrap
+                    )}
+                  >
+                    <Icon className={cn("size-5", tone.icon)} />
+                  </div>
+                  {kpi.tone !== "orange" ? (
+                    <Sparkline className={tone.spark} />
+                  ) : null}
+                </div>
+              </CardContent>
+            </Card>
+          )
+        })}
+      </section>
+    </TooltipProvider>
   )
 }
