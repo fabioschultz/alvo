@@ -51,7 +51,7 @@ export function InsightsGrid() {
                 type="button"
                 onClick={() => setSelected(insight)}
                 className={cn(
-                  "group flex items-center gap-3 rounded-xl px-3 py-2.5 text-left",
+                  "group flex items-center gap-2.5 rounded-xl px-2.5 py-2.5 text-left sm:gap-3 sm:px-3",
                   "bg-zinc-50/80 ring-1 ring-zinc-200/70 transition-colors",
                   "hover:bg-zinc-100/90 hover:ring-zinc-300",
                   "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
@@ -65,7 +65,7 @@ export function InsightsGrid() {
                 >
                   <Icon className="size-4" />
                 </div>
-                <span className="min-w-0 flex-1 truncate text-sm font-medium text-foreground">
+                <span className="min-w-0 flex-1 text-sm font-medium leading-snug text-foreground sm:truncate">
                   {insight.title}
                 </span>
                 <Badge

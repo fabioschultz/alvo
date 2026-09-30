@@ -40,13 +40,13 @@ export function ChatComposer({ onSubmitPrompt }: ChatComposerProps) {
 
   return (
     <TooltipProvider delay={200}>
-      <section aria-label="Composer Alvo AI" className="sticky bottom-0 pt-2">
+      <section aria-label="Composer Alvo AI">
         <form
           onSubmit={handleSubmit}
-          className="rounded-2xl border border-zinc-200/80 bg-white p-2 shadow-[0_8px_30px_rgba(15,23,42,0.06)]"
+          className="rounded-2xl border border-zinc-200/80 bg-white p-1.5 shadow-[0_8px_30px_rgba(15,23,42,0.06)] md:p-2"
         >
-          <div className="flex items-center gap-1.5">
-            <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-zinc-100 text-zinc-600">
+          <div className="flex items-center gap-1 md:gap-1.5">
+            <div className="hidden size-10 shrink-0 items-center justify-center rounded-xl bg-zinc-100 text-zinc-600 sm:flex">
               <Bot className="size-5" aria-hidden />
             </div>
             <Input
@@ -54,7 +54,7 @@ export function ChatComposer({ onSubmitPrompt }: ChatComposerProps) {
               onChange={(event) => setValue(event.target.value)}
               placeholder="Pergunte ao Alvo AI..."
               aria-label="Pergunte ao Alvo AI"
-              className="h-11 flex-1 border-0 bg-transparent text-sm shadow-none focus-visible:ring-0"
+              className="h-10 min-w-0 flex-1 border-0 bg-transparent text-sm shadow-none focus-visible:ring-0 md:h-11"
               disabled={status === "queued"}
             />
 
@@ -77,7 +77,7 @@ export function ChatComposer({ onSubmitPrompt }: ChatComposerProps) {
                     type="button"
                     variant="ghost"
                     size="icon"
-                    className="size-10 rounded-xl text-zinc-500"
+                    className="size-9 shrink-0 rounded-xl text-zinc-500 md:size-10"
                     aria-label="Anexar arquivo"
                     disabled={status === "queued"}
                     onClick={() => fileInputRef.current?.click()}
@@ -96,7 +96,7 @@ export function ChatComposer({ onSubmitPrompt }: ChatComposerProps) {
                     type="button"
                     variant="ghost"
                     size="icon"
-                    className="size-10 rounded-xl text-zinc-500"
+                    className="size-9 shrink-0 rounded-xl text-zinc-500 md:size-10"
                     aria-label="Áudio"
                     disabled={status === "queued"}
                     onClick={() =>
@@ -117,18 +117,23 @@ export function ChatComposer({ onSubmitPrompt }: ChatComposerProps) {
             <Button
               type="submit"
               size="icon"
-              className="size-10 rounded-xl"
+              className="size-9 shrink-0 rounded-xl md:size-10"
               disabled={!value.trim() || status === "queued"}
               aria-label="Enviar pergunta"
             >
               <SendHorizontal className="size-4" />
             </Button>
           </div>
-          <p className="mt-1 px-2 pb-1 text-[11px] text-zinc-400">
+          <p className="mt-0.5 hidden px-2 pb-1 text-[11px] text-zinc-400 sm:block">
             {attachmentName
               ? `Anexo selecionado: ${attachmentName} (mock — upload real depois).`
               : "Protótipo — respostas reais do AI ainda não estão conectadas."}
           </p>
+          {attachmentName ? (
+            <p className="truncate px-2 pb-1 text-[11px] text-zinc-400 sm:hidden">
+              Anexo: {attachmentName}
+            </p>
+          ) : null}
         </form>
       </section>
     </TooltipProvider>
