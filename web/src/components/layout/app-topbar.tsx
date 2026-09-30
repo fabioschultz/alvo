@@ -34,24 +34,31 @@ const shortcutIcon = {
 } as const
 
 type AppTopbarProps = {
-  onOpenNav?: () => void
+  onToggleNav?: () => void
 }
 
-export function AppTopbar({ onOpenNav }: AppTopbarProps) {
+export function AppTopbar({ onToggleNav }: AppTopbarProps) {
   return (
     <TooltipProvider delay={200}>
       <header className="shrink-0 border-b border-border/80 bg-white">
         <div className="flex h-14 items-center gap-2 px-3 md:h-16 md:gap-4 md:px-6">
-          <Button
-            type="button"
-            variant="ghost"
-            size="icon"
-            className="size-9 shrink-0 md:hidden"
-            aria-label="Abrir menu"
-            onClick={onOpenNav}
-          >
-            <Menu className="size-5" />
-          </Button>
+          <Tooltip>
+            <TooltipTrigger
+              render={
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="size-9 shrink-0"
+                  aria-label="Alternar menu"
+                  onClick={onToggleNav}
+                >
+                  <Menu className="size-5" />
+                </Button>
+              }
+            />
+            <TooltipContent side="bottom">Menu</TooltipContent>
+          </Tooltip>
 
           <div className="relative min-w-0 flex-1 md:max-w-md">
             <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-zinc-400" />
