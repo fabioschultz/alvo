@@ -25,6 +25,20 @@ export function addProduct(product: Product) {
   emit()
 }
 
+export function updateProduct(product: Product) {
+  products = products.map((item) => (item.id === product.id ? product : item))
+  emit()
+}
+
+export function removeProduct(id: string) {
+  products = products.filter((item) => item.id !== id)
+  emit()
+}
+
+export function getProductById(id: string): Product | undefined {
+  return products.find((item) => item.id === id)
+}
+
 export function useProducts() {
   return useSyncExternalStore(
     subscribeProducts,

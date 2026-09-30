@@ -1,14 +1,16 @@
 "use client"
 
 import Link from "next/link"
-import { useRouter } from "next/navigation"
-import { useEffect, useRef, useState } from "react"
-import { ArrowLeft, Bot, User } from "lucide-react"
+import { useRouter, useSearchParams } from "next/navigation"
+import { Suspense, useEffect, useRef, useState } from "react"
+import { ArrowLeft } from "lucide-react"
 
-import { ProductComposer } from "@/components/products/product-composer"
-import { ProductDraftPanel } from "@/components/products/product-draft-panel"
+import {
+  ProductChatPanel,
+  type ProductChatMessage,
+} from "@/components/products/product-chat-panel"
+import { ProductForm } from "@/components/products/product-form"
 import { Button } from "@/components/ui/button"
-import { cn } from "@/lib/utils"
 import {
   draftToProduct,
   extractProductDraft,
@@ -17,13 +19,12 @@ import {
   type ProductDraft,
   type ProductFlowPhase,
 } from "@/lib/mock-data"
-import { addProduct, useProducts } from "@/lib/products-store"
-
-type ChatMessage = {
-  id: string
-  role: "user" | "assistant"
-  text: string
-}
+import {
+  addProduct,
+  getProductById,
+  updateProduct,
+  useProducts,
+} from "@/lib/products-store"
 
 const emptyDraft: ProductDraft = {
   name: "",
@@ -35,21 +36,32 @@ const emptyDraft: ProductDraft = {
   notes: "",
 }
 
-export function NewProductFlow() {
+function productToDraft(product: Product): ProductDraft {
+  return {
+    name: product.name,
+    sku: product.sku,
+    family: product.family,
+    unit: product.unit,
+    weightKg: product.weightKg != null ? String(product.weightKg) : "",
+    description: product.description,
+    notes: "",
+  }
+}
+
+function NewProductFlowInner() {
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const editId = searchParams.get("id")
   const catalog = useProducts()
+  const editing = editId ? getProductById(editId) : undefined
+  const mode = editing ? "edit" : "create"
+
   const [phase, setPhase] = useState<ProductFlowPhase>("empty")
-  const [draft, setDraft] = useState<ProductDraft | null>(null)
+  const [draft, setDraft] = useState<ProductDraft>(emptyDraft)
   const [duplicate, setDuplicate] = useState<Product | null>(null)
-  const [messages, setMessages] = useState<ChatMessage[]>([
-    {
-      id: "welcome",
-      role: "assistant",
-      text: "Descreva o produto em linguagem natural — ou anexe foto/PDF. Eu monto o rascunho para você revisar.",
-    },
-  ])
-  const threadRef = useRef<HTMLDivElement>(null)
+  const [messages, setMessages] = useState<ProductChatMessage[]>([])
   const extractTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const loadedEditId = useRef<string | null>(null)
 
   useEffect(() => {
     return () => {
@@ -58,23 +70,78 @@ export function NewProductFlow() {
   }, [])
 
   useEffect(() => {
-    const el = threadRef.current
-    if (!el) return
-    el.scrollTop = el.scrollHeight
-  }, [messages, phase])
+    if (editing && loadedEditId.current !== editing.id) {
+      loadedEditId.current = editing.id
+      setDraft(productToDraft(editing))
+      setPhase("draft")
+      setDuplicate(null)
+      setMessages([
+        {
+          id: `edit-${editing.id}`,
+          role: "assistant",
+          text: `Editando “${editing.name}”. Peça ajustes aqui ou altere o formulário diretamente.`,
+        },
+      ])
+      return
+    }
+
+    if (!editing && loadedEditId.current !== null) {
+      loadedEditId.current = null
+      setDraft(emptyDraft)
+      setPhase("empty")
+      setDuplicate(null)
+      setMessages([
+        {
+          id: "welcome",
+          role: "assistant",
+          text: "Preencha o formulário ao lado — ou me descreva o produto que eu monto os campos pra você.",
+        },
+      ])
+    }
+
+    if (!editing && messages.length === 0) {
+      setMessages([
+        {
+          id: "welcome",
+          role: "assistant",
+          text: "Preencha o formulário ao lado — ou me descreva o produto que eu monto os campos pra você.",
+        },
+      ])
+    }
+  }, [editing, messages.length])
 
   function resetFlow() {
     if (extractTimer.current) clearTimeout(extractTimer.current)
+    if (editing) {
+      setDraft(productToDraft(editing))
+      setPhase("draft")
+      setDuplicate(null)
+      setMessages((current) => [
+        ...current,
+        {
+          id: `reset-${Date.now()}`,
+          role: "assistant",
+          text: "Voltei aos dados originais do produto.",
+        },
+      ])
+      return
+    }
     setPhase("empty")
-    setDraft(null)
+    setDraft(emptyDraft)
     setDuplicate(null)
     setMessages([
       {
         id: `welcome-${Date.now()}`,
         role: "assistant",
-        text: "Pronto para o próximo. Descreva o produto ou anexe um arquivo.",
+        text: "Formulário limpo. Pode preencher manualmente ou descrever o produto aqui.",
       },
     ])
+  }
+
+  function handleDraftChange(next: ProductDraft) {
+    setDraft(next)
+    if (phase === "empty" || phase === "saved") setPhase("draft")
+    if (phase === "duplicate") setDuplicate(null)
   }
 
   async function handlePrompt(prompt: string, attachmentName: string | null) {
@@ -92,7 +159,7 @@ export function NewProductFlow() {
       {
         id: `assist-wait-${Date.now()}`,
         role: "assistant",
-        text: "Analisando a descrição e montando o rascunho…",
+        text: "Analisando e preenchendo o formulário…",
       },
     ])
     setPhase("extracting")
@@ -108,7 +175,7 @@ export function NewProductFlow() {
           {
             id: `assist-done-${Date.now()}`,
             role: "assistant",
-            text: `Sugeri “${next.name}” (${next.sku}). Revise o painel ao lado e confirme.`,
+            text: `Preenchi “${next.name}” (${next.sku}). Revise o formulário e salve.`,
           },
         ])
         resolve()
@@ -117,9 +184,10 @@ export function NewProductFlow() {
   }
 
   function confirmSave(force = false) {
-    if (!draft) return
-
-    const match = findDuplicateProduct(draft, catalog)
+    const match = findDuplicateProduct(
+      draft,
+      catalog.filter((item) => item.id !== editing?.id)
+    )
     if (match && !force) {
       setDuplicate(match)
       setPhase("duplicate")
@@ -128,14 +196,21 @@ export function NewProductFlow() {
         {
           id: `dup-${Date.now()}`,
           role: "assistant",
-          text: `Encontrei um possível duplicado: ${match.name} (${match.sku}). Ajuste o rascunho ou confirme mesmo assim.`,
+          text: `Possível duplicado: ${match.name} (${match.sku}). Ajuste ou confirme mesmo assim.`,
         },
       ])
       return
     }
 
-    const product = draftToProduct(draft, `prod-${Date.now()}`)
-    addProduct(product)
+    if (editing) {
+      const product = draftToProduct(draft, editing.id)
+      product.status = editing.status
+      product.stockHint = editing.stockHint
+      updateProduct(product)
+    } else {
+      addProduct(draftToProduct(draft, `prod-${Date.now()}`))
+    }
+
     setPhase("saved")
     setDuplicate(null)
     setMessages((current) => [
@@ -143,7 +218,9 @@ export function NewProductFlow() {
       {
         id: `saved-${Date.now()}`,
         role: "assistant",
-        text: `Pronto — “${product.name}” entrou no catálogo mock.`,
+        text: editing
+          ? `Alterações de “${draft.name}” salvas no catálogo mock.`
+          : `“${draft.name}” entrou no catálogo mock.`,
       },
     ])
   }
@@ -167,7 +244,7 @@ export function NewProductFlow() {
               Estoque · Produtos
             </p>
             <h1 className="truncate text-lg font-semibold tracking-tight text-foreground">
-              Novo produto com Alvo AI
+              {mode === "edit" ? "Editar produto" : "Novo produto"}
             </h1>
           </div>
           {phase === "saved" ? (
@@ -183,76 +260,48 @@ export function NewProductFlow() {
         </div>
       </div>
 
-      <div className="min-h-0 flex-1 overflow-y-auto">
-        <div className="mx-auto grid w-full max-w-6xl gap-4 px-4 py-4 md:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)] md:gap-5 md:px-6 md:py-5">
-          <section className="flex min-h-[22rem] flex-col rounded-xl bg-white shadow-sm ring-1 ring-slate-200/70 md:min-h-[28rem]">
-            <div className="border-b border-slate-100 px-4 py-3">
-              <p className="text-sm font-medium text-foreground">Conversa</p>
-              <p className="text-xs text-slate-500">
-                Entrada livre · extração simulada
-              </p>
-            </div>
-            <div
-              ref={threadRef}
-              className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto px-4 py-4"
-            >
-              {messages.map((message) => (
-                <div
-                  key={message.id}
-                  className={cn(
-                    "flex gap-2.5",
-                    message.role === "user" ? "justify-end" : "justify-start"
-                  )}
-                >
-                  {message.role === "assistant" ? (
-                    <div className="mt-0.5 flex size-7 shrink-0 items-center justify-center rounded-lg bg-blue-50 text-blue-700">
-                      <Bot className="size-3.5" aria-hidden />
-                    </div>
-                  ) : null}
-                  <div
-                    className={cn(
-                      "max-w-[85%] rounded-2xl px-3 py-2 text-sm leading-relaxed whitespace-pre-wrap",
-                      message.role === "user"
-                        ? "bg-blue-700 text-white"
-                        : "bg-slate-50 text-slate-700 ring-1 ring-slate-100"
-                    )}
-                  >
-                    {message.text}
-                  </div>
-                  {message.role === "user" ? (
-                    <div className="mt-0.5 flex size-7 shrink-0 items-center justify-center rounded-lg bg-slate-100 text-slate-500">
-                      <User className="size-3.5" aria-hidden />
-                    </div>
-                  ) : null}
-                </div>
-              ))}
-            </div>
-          </section>
+      <div className="min-h-0 flex-1 overflow-hidden">
+        <div className="mx-auto grid h-full w-full max-w-6xl grid-rows-[minmax(0,1fr)_minmax(16rem,0.85fr)] gap-4 overflow-hidden p-4 md:grid-cols-[minmax(0,1.15fr)_minmax(18rem,0.85fr)] md:grid-rows-1 md:gap-5 md:px-6 md:py-5">
+          <div className="min-h-0 overflow-y-auto">
+            <ProductForm
+              mode={mode}
+              phase={phase === "empty" ? "draft" : phase}
+              draft={draft}
+              duplicate={duplicate}
+              onChange={handleDraftChange}
+              onConfirm={() => confirmSave(false)}
+              onForceSave={() => confirmSave(true)}
+              onReset={resetFlow}
+              onDismissDuplicate={() => {
+                setPhase("draft")
+                setDuplicate(null)
+              }}
+            />
+          </div>
 
-          <ProductDraftPanel
-            phase={phase}
-            draft={draft ?? emptyDraft}
-            duplicate={duplicate}
-            onChange={setDraft}
-            onConfirm={() => confirmSave(false)}
-            onForceSave={() => confirmSave(true)}
-            onReset={resetFlow}
-            onDismissDuplicate={() => {
-              setPhase("draft")
-              setDuplicate(null)
-            }}
-          />
-        </div>
-      </div>
-
-      <div className="shrink-0 border-t border-slate-200/80 bg-slate-50/95 px-3 pt-2 pb-[max(0.75rem,env(safe-area-inset-bottom))] backdrop-blur md:px-6">
-        <div className="mx-auto w-full max-w-6xl">
-          <ProductComposer
-            disabled={phase === "extracting" || phase === "saved"}
-            onSubmitPrompt={handlePrompt}
-          />
+          <div className="min-h-0">
+            <ProductChatPanel
+              messages={messages}
+              disabled={phase === "extracting" || phase === "saved"}
+              onSubmitPrompt={handlePrompt}
+            />
+          </div>
         </div>
       </div>
     </div>
+  )
+}
+
+export function NewProductFlow() {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex h-full items-center justify-center text-sm text-slate-500">
+          Carregando…
+        </div>
+      }
+    >
+      <NewProductFlowInner />
+    </Suspense>
   )
 }

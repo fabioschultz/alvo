@@ -1,16 +1,30 @@
 "use client"
 
 import Link from "next/link"
-import { useMemo, useState } from "react"
-import { Plus, Search, Sparkles } from "lucide-react"
+import { useEffect, useMemo, useRef, useState } from "react"
+import {
+  Columns3,
+  Pencil,
+  Plus,
+  Search,
+  Trash2,
+} from "lucide-react"
 
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
-import { useProducts } from "@/lib/products-store"
+import { removeProduct, useProducts } from "@/lib/products-store"
 import { cn } from "@/lib/utils"
-import type { ProductStatus } from "@/lib/mock-data"
+import type { Product, ProductStatus } from "@/lib/mock-data"
 
 const statusStyles: Record<ProductStatus, string> = {
   ativo: "bg-teal-50 text-teal-800",
@@ -18,9 +32,131 @@ const statusStyles: Record<ProductStatus, string> = {
   inativo: "bg-slate-100 text-slate-600",
 }
 
+type ColumnId =
+  | "name"
+  | "sku"
+  | "family"
+  | "unit"
+  | "weight"
+  | "stock"
+  | "status"
+  | "updatedAt"
+
+const COLUMN_DEFS: { id: ColumnId; label: string; defaultVisible: boolean }[] =
+  [
+    { id: "name", label: "Produto", defaultVisible: true },
+    { id: "sku", label: "SKU", defaultVisible: true },
+    { id: "family", label: "Família", defaultVisible: true },
+    { id: "unit", label: "Unidade", defaultVisible: true },
+    { id: "weight", label: "Peso", defaultVisible: false },
+    { id: "stock", label: "Estoque", defaultVisible: true },
+    { id: "status", label: "Status", defaultVisible: true },
+    { id: "updatedAt", label: "Atualizado", defaultVisible: false },
+  ]
+
+const STORAGE_KEY = "alvo.products.visibleColumns"
+
+function defaultVisibleColumns(): ColumnId[] {
+  return COLUMN_DEFS.filter((col) => col.defaultVisible).map((col) => col.id)
+}
+
+function loadVisibleColumns(): ColumnId[] {
+  if (typeof window === "undefined") return defaultVisibleColumns()
+  try {
+    const raw = window.localStorage.getItem(STORAGE_KEY)
+    if (!raw) return defaultVisibleColumns()
+    const parsed = JSON.parse(raw) as string[]
+    const valid = COLUMN_DEFS.map((col) => col.id)
+    const next = parsed.filter((id): id is ColumnId =>
+      valid.includes(id as ColumnId)
+    )
+    return next.includes("name") ? next : ["name", ...next]
+  } catch {
+    return defaultVisibleColumns()
+  }
+}
+
+function cellValue(product: Product, column: ColumnId): React.ReactNode {
+  switch (column) {
+    case "name":
+      return (
+        <div>
+          <p className="font-medium text-foreground">{product.name}</p>
+          <p className="mt-0.5 line-clamp-1 text-xs text-slate-400">
+            {product.description}
+          </p>
+        </div>
+      )
+    case "sku":
+      return (
+        <span className="font-mono text-xs text-slate-600">{product.sku}</span>
+      )
+    case "family":
+      return <span className="text-slate-600">{product.family}</span>
+    case "unit":
+      return <span className="text-slate-600">{product.unit}</span>
+    case "weight":
+      return (
+        <span className="text-slate-600">
+          {product.weightKg != null ? `${product.weightKg} kg` : "—"}
+        </span>
+      )
+    case "stock":
+      return <span className="text-slate-600">{product.stockHint}</span>
+    case "status":
+      return (
+        <Badge
+          variant="secondary"
+          className={cn(
+            "rounded-full capitalize",
+            statusStyles[product.status]
+          )}
+        >
+          {product.status}
+        </Badge>
+      )
+    case "updatedAt":
+      return <span className="text-slate-600">{product.updatedAt}</span>
+    default:
+      return null
+  }
+}
+
 export function ProductsCatalog() {
   const products = useProducts()
   const [query, setQuery] = useState("")
+  const [visibleColumns, setVisibleColumns] = useState<ColumnId[]>(
+    defaultVisibleColumns
+  )
+  const [columnsOpen, setColumnsOpen] = useState(false)
+  const columnsRef = useRef<HTMLDivElement>(null)
+  const [pendingDelete, setPendingDelete] = useState<Product | null>(null)
+
+  useEffect(() => {
+    setVisibleColumns(loadVisibleColumns())
+  }, [])
+
+  useEffect(() => {
+    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(visibleColumns))
+  }, [visibleColumns])
+
+  useEffect(() => {
+    if (!columnsOpen) return
+    function onPointerDown(event: MouseEvent) {
+      if (!columnsRef.current?.contains(event.target as Node)) {
+        setColumnsOpen(false)
+      }
+    }
+    function onKey(event: KeyboardEvent) {
+      if (event.key === "Escape") setColumnsOpen(false)
+    }
+    document.addEventListener("mousedown", onPointerDown)
+    document.addEventListener("keydown", onKey)
+    return () => {
+      document.removeEventListener("mousedown", onPointerDown)
+      document.removeEventListener("keydown", onKey)
+    }
+  }, [columnsOpen])
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase()
@@ -32,6 +168,19 @@ export function ProductsCatalog() {
         item.family.toLowerCase().includes(q)
     )
   }, [products, query])
+
+  const activeColumns = COLUMN_DEFS.filter((col) =>
+    visibleColumns.includes(col.id)
+  )
+
+  function toggleColumn(id: ColumnId) {
+    if (id === "name") return
+    setVisibleColumns((current) =>
+      current.includes(id)
+        ? current.filter((item) => item !== id)
+        : [...current, id]
+    )
+  }
 
   return (
     <div className="flex h-full min-h-0 flex-col">
@@ -46,29 +195,82 @@ export function ProductsCatalog() {
                 Catálogo de produtos
               </h1>
               <p className="mt-1 max-w-xl text-sm text-slate-500">
-                Lista mock para iterar o cadastro conversacional. Sem
-                persistência real.
+                Lista mock com colunas configuráveis e ações. Sem persistência
+                real.
               </p>
             </div>
             <Button
               render={<Link href="/estoque/produtos/novo" />}
               className="gap-1.5 self-start sm:self-auto"
             >
-              <Sparkles className="size-4" />
-              Novo produto com Alvo AI
+              <Plus className="size-4" />
+              Novo produto
             </Button>
           </header>
 
-          <div className="relative max-w-md">
-            <Search className="pointer-events-none absolute top-1/2 left-2.5 size-3.5 -translate-y-1/2 text-slate-400" />
-            <Input
-              value={query}
-              onChange={(event) => setQuery(event.target.value)}
-              type="search"
-              placeholder="Buscar por nome, SKU ou família…"
-              aria-label="Buscar produtos"
-              className="h-9 rounded-lg border-slate-200 bg-white pl-8 text-sm shadow-none"
-            />
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+            <div className="relative w-full max-w-md">
+              <Search className="pointer-events-none absolute top-1/2 left-2.5 size-3.5 -translate-y-1/2 text-slate-400" />
+              <Input
+                value={query}
+                onChange={(event) => setQuery(event.target.value)}
+                type="search"
+                placeholder="Buscar por nome, SKU ou família…"
+                aria-label="Buscar produtos"
+                className="h-9 rounded-lg border-slate-200 bg-white pl-8 text-sm shadow-none"
+              />
+            </div>
+
+            <div className="relative self-start" ref={columnsRef}>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="gap-1.5"
+                aria-expanded={columnsOpen}
+                aria-haspopup="dialog"
+                onClick={() => setColumnsOpen((open) => !open)}
+              >
+                <Columns3 className="size-3.5" />
+                Colunas
+              </Button>
+              {columnsOpen ? (
+                <div
+                  role="dialog"
+                  aria-label="Escolher colunas"
+                  className="absolute top-full right-0 z-20 mt-1.5 w-56 rounded-xl border border-slate-200 bg-white p-2 shadow-lg"
+                >
+                  <p className="px-2 py-1.5 text-xs font-medium text-slate-400">
+                    Exibir na tabela
+                  </p>
+                  <ul className="space-y-0.5">
+                    {COLUMN_DEFS.map((col) => {
+                      const checked = visibleColumns.includes(col.id)
+                      const locked = col.id === "name"
+                      return (
+                        <li key={col.id}>
+                          <label
+                            className={cn(
+                              "flex cursor-pointer items-center gap-2 rounded-lg px-2 py-1.5 text-sm text-slate-700 hover:bg-slate-50",
+                              locked && "cursor-default opacity-70"
+                            )}
+                          >
+                            <input
+                              type="checkbox"
+                              className="size-3.5 rounded border-slate-300"
+                              checked={checked}
+                              disabled={locked}
+                              onChange={() => toggleColumn(col.id)}
+                            />
+                            <span>{col.label}</span>
+                          </label>
+                        </li>
+                      )
+                    })}
+                  </ul>
+                </div>
+              ) : null}
+            </div>
           </div>
 
           <Card className="border-0 bg-white shadow-sm ring-1 ring-slate-200/70">
@@ -77,12 +279,14 @@ export function ProductsCatalog() {
                 <table className="w-full min-w-[640px] text-left text-sm">
                   <thead>
                     <tr className="border-b border-slate-100 text-xs font-medium tracking-wide text-slate-400 uppercase">
-                      <th className="px-4 py-3 font-medium">Produto</th>
-                      <th className="px-4 py-3 font-medium">SKU</th>
-                      <th className="px-4 py-3 font-medium">Família</th>
-                      <th className="px-4 py-3 font-medium">Unidade</th>
-                      <th className="px-4 py-3 font-medium">Estoque</th>
-                      <th className="px-4 py-3 font-medium">Status</th>
+                      {activeColumns.map((col) => (
+                        <th key={col.id} className="px-4 py-3 font-medium">
+                          {col.label}
+                        </th>
+                      ))}
+                      <th className="px-4 py-3 text-right font-medium">
+                        Ações
+                      </th>
                     </tr>
                   </thead>
                   <tbody>
@@ -91,36 +295,37 @@ export function ProductsCatalog() {
                         key={product.id}
                         className="border-b border-slate-50 last:border-0 hover:bg-slate-50/70"
                       >
-                        <td className="px-4 py-3">
-                          <p className="font-medium text-foreground">
-                            {product.name}
-                          </p>
-                          <p className="mt-0.5 line-clamp-1 text-xs text-slate-400">
-                            {product.description}
-                          </p>
-                        </td>
-                        <td className="px-4 py-3 font-mono text-xs text-slate-600">
-                          {product.sku}
-                        </td>
-                        <td className="px-4 py-3 text-slate-600">
-                          {product.family}
-                        </td>
-                        <td className="px-4 py-3 text-slate-600">
-                          {product.unit}
-                        </td>
-                        <td className="px-4 py-3 text-slate-600">
-                          {product.stockHint}
-                        </td>
-                        <td className="px-4 py-3">
-                          <Badge
-                            variant="secondary"
-                            className={cn(
-                              "rounded-full capitalize",
-                              statusStyles[product.status]
-                            )}
-                          >
-                            {product.status}
-                          </Badge>
+                        {activeColumns.map((col) => (
+                          <td key={col.id} className="px-4 py-3 align-middle">
+                            {cellValue(product, col.id)}
+                          </td>
+                        ))}
+                        <td className="px-4 py-3 align-middle">
+                          <div className="flex justify-end gap-1">
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="icon-sm"
+                              aria-label={`Editar ${product.name}`}
+                              render={
+                                <Link
+                                  href={`/estoque/produtos/novo?id=${product.id}`}
+                                />
+                              }
+                            >
+                              <Pencil className="size-3.5" />
+                            </Button>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="icon-sm"
+                              className="text-slate-500 hover:text-destructive"
+                              aria-label={`Excluir ${product.name}`}
+                              onClick={() => setPendingDelete(product)}
+                            >
+                              <Trash2 className="size-3.5" />
+                            </Button>
+                          </div>
                         </td>
                       </tr>
                     ))}
@@ -131,7 +336,9 @@ export function ProductsCatalog() {
               {filtered.length === 0 ? (
                 <div className="flex flex-col items-center gap-3 px-4 py-12 text-center">
                   <p className="text-sm text-slate-500">
-                    Nenhum produto encontrado para “{query}”.
+                    {query
+                      ? `Nenhum produto encontrado para “${query}”.`
+                      : "Nenhum produto no catálogo."}
                   </p>
                   <Button
                     variant="outline"
@@ -140,7 +347,7 @@ export function ProductsCatalog() {
                     render={<Link href="/estoque/produtos/novo" />}
                   >
                     <Plus className="size-3.5" />
-                    Cadastrar com Alvo AI
+                    Novo produto
                   </Button>
                 </div>
               ) : null}
@@ -148,6 +355,43 @@ export function ProductsCatalog() {
           </Card>
         </div>
       </div>
+
+      <Dialog
+        open={Boolean(pendingDelete)}
+        onOpenChange={(open) => {
+          if (!open) setPendingDelete(null)
+        }}
+      >
+        <DialogContent className="sm:max-w-md" showCloseButton>
+          <DialogHeader>
+            <DialogTitle>Excluir produto?</DialogTitle>
+            <DialogDescription>
+              {pendingDelete
+                ? `“${pendingDelete.name}” (${pendingDelete.sku}) será removido do catálogo mock desta sessão.`
+                : null}
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setPendingDelete(null)}
+            >
+              Cancelar
+            </Button>
+            <Button
+              type="button"
+              variant="destructive"
+              onClick={() => {
+                if (pendingDelete) removeProduct(pendingDelete.id)
+                setPendingDelete(null)
+              }}
+            >
+              Excluir
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
